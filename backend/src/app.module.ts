@@ -2,13 +2,16 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+
 import { AuthModule } from './auth/auth.module'
 // import { UsersModule } from './users/users.module';
-// import { MembersModule } from './members/members.module';
+import { MembersModule } from './members/members.module';
 // import { ClassesModule } from './classes/classes.module';
 // import { AttendanceModule } from './attendance/attendance.module';
 // import { NewsModule } from './news/news.module';
+import { PaymentsModule } from './payments/payments.module';
 import { PublicModule } from './public/public.module';
+import { AttendanceModule } from './attendance/attendance.module';
 
 @Module({
   imports: [
@@ -22,11 +25,13 @@ import { PublicModule } from './public/public.module';
     }),
     AuthModule,
     // UsersModule,
-    // MembersModule,
+    MembersModule,
     // ClassesModule,
     // AttendanceModule,
     // NewsModule,
-    // PublicModule,
+    PublicModule,
+    PaymentsModule,
+    AttendanceModule
   ],
 })
 export class AppModule {}

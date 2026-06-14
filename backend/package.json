@@ -7,7 +7,8 @@
         "dev": "nest start --watch",
         "build": "nest build",
         "start": "node dist/main.js",
-        "start:prod": "NODE_ENV=production node dist/main.js"
+        "start:prod": "NODE_ENV=production node dist/main.js",
+        "import:members": "ts-node scripts/import-members.ts"
     },
     "dependencies": {
         "@nestjs/common": "^10.4.20",
@@ -21,20 +22,27 @@
         "class-transformer": "^0.5.1",
         "class-validator": "^0.14.3",
         "cookie-parser": "^1.4.7",
+        "dotenv": "^17.4.2",
         "express": "^5.2.1",
         "mongoose": "^8.20.2",
+        "nodemailer": "^9.0.0",
         "passport": "^0.7.0",
         "passport-jwt": "^4.0.1",
         "passport-local": "^1.0.0",
         "reflect-metadata": "^0.1.14",
-        "rxjs": "^7.8.2"
+        "rxjs": "^7.8.2",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "@nestjs/cli": "^10.0.0",
         "@nestjs/schematics": "^10.0.0",
         "@nestjs/testing": "^10.0.0",
+        "@types/bcrypt": "^6.0.0",
         "@types/cookie-parser": "^1.4.10",
         "@types/express": "^5.0.6",
+        "@types/nodemailer": "^8.0.1",
+        "@types/passport-jwt": "^4.0.1",
+        "ts-node": "^10.9.2",
         "ts-node-dev": "^2.0.0",
         "typescript": "^5.9.3"
     },

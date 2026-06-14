@@ -1,36 +1,63 @@
-// // backend/src/attendance/attendance.controller.ts
-// import { Body, Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
-// import { AttendanceService } from './attendance.service';
-// import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-// import { RolesGuard } from '../auth/roles.guard';
-// import { Roles } from '../auth/roles.decorator';
+// backend/src/attendance/attendance.controller.ts
+import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { AttendanceService } from './attendance.service';
+import {
+  AttendanceSession,
+  AttendanceStatus,
+} from './schemas/attendance.schema';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 
-// @Controller('attendance')
-// @UseGuards(JwtAuthGuard, RolesGuard)
-// export class AttendanceController {
-//   constructor(private readonly attendanceService: AttendanceService) {}
+@Controller('attendance')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class AttendanceController {
+  constructor(private readonly attendanceService: AttendanceService) {}
 
-//   // Staff marking attendance manually for member
-//   @Post('sessions/:sessionId/check-in/:memberId')
-//   @Roles('COACH', 'ADMIN', 'SUPER_ADMIN')
-//   checkInMember(
-//     @Param('sessionId') sessionId: string,
-//     @Param('memberId') memberId: string,
-//     @Request() req,
-//   ) {
-//     return this.attendanceService.checkIn({
-//       classSessionId: sessionId,
-//       memberId,
-//       userId: req.user.sub,
-//       method: 'MANUAL',
-//       source: 'PORTAL',
-//     });
-//   }
+  @Get('register/:session')
+  @Roles('COACH', 'ADMIN', 'SUPER_ADMIN')
+  getRegister(@Param('session') session: AttendanceSession) {
+    return this.attendanceService.getRegister(session);
+  }
 
-//   // Member history (later for app)
-//   @Get('me')
-//   @Roles('MEMBER', 'GUARDIAN')
-//   getMyAttendance(@Request() req, @Query('from') from?: string, @Query('to') to?: string) {
-//     return this.attendanceService.findForMember(req.user.sub, { from, to });
-//   }
-// }
+  @Post('mark')
+  @Roles('COACH', 'ADMIN', 'SUPER_ADMIN')
+  markAttendance(
+    @Body()
+    body: {
+      memberId: string;
+      session: AttendanceSession;
+      status: AttendanceStatus;
+      markedBy?: string;
+    },
+  ) {
+    return this.attendanceService.markAttendance(body);
+  }
+
+  @Get('member/:memberId')
+  @Roles('COACH', 'ADMIN', 'SUPER_ADMIN')
+  findByMember(@Param('memberId') memberId: string) {
+    return this.attendanceService.findByMember(memberId);
+  }
+
+  @Get('report')
+  @Roles('COACH', 'ADMIN', 'SUPER_ADMIN')
+  getReport() {
+    return this.attendanceService.getReport();
+  }
+
+  @Post('admin/backfill')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  backfillSessionAttendance(
+    @Body()
+    body: {
+      session: AttendanceSession;
+      date: string;
+      presentNames: string[];
+      markedAt: string;
+      markedBy?: string;
+    },
+  ) {
+    return this.attendanceService.backfillSessionAttendance(body);
+  }
+}

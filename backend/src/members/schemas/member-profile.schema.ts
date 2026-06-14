@@ -3,77 +3,93 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 
 export type MemberProfileDocument = HydratedDocument<MemberProfile>;
+
 export type Discipline = 'BOXING' | 'BJJ' | 'MUAY_THAI';
+export type MembershipStatus = 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'TRIAL';
+export type Session = 'CUBS' | 'TIGERS' | 'ADULTS' | 'UNKNOWN';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true, collection: 'members' })
 export class MemberProfile {
-  @Prop({ required: true })
-  firstName: string;
+  @Prop({ default: 'GUARDIAN' })
+  accountType: 'GUARDIAN';
 
-  @Prop({ required: true })
-  lastName: string;
+  @Prop({ trim: true, default: '' })
+  guardianFirstName: string;
 
-  @Prop({ required: true })
-  dateOfBirth: Date;
+  @Prop({ trim: true, default: '' })
+  guardianMiddleName: string;
 
-  @Prop({ required: true })
-  isMinor: boolean;
+  @Prop({ trim: true, default: '' })
+  guardianLastName: string;
 
-  @Prop({
-    type: [
-      {
-        guardianId: { type: String, required: true },
-        relationship: String,
-        canViewMedical: Boolean,
-        canManagePayments: Boolean,
-      },
-    ],
-    default: [],
-  })
-  guardians: {
-    guardianId: string;
-    relationship: string;
-    canViewMedical: boolean;
-    canManagePayments: boolean;
-  }[];
+  @Prop({ lowercase: true, trim: true, default: '' })
+  email: string;
 
-  @Prop({
-    type: {
-      phone: String,
-      email: String,
-      address: String,
-    },
-  })
-  contact: {
-    phone?: string;
-    email?: string;
-    address?: string;
-  };
+  @Prop({ trim: true, default: 'Guardian' })
+  relationship: string;
 
-  @Prop({
-    type: [
-      {
-        name: String,
-        phone: String,
-        relationship: String,
-      },
-    ],
-    default: [],
-  })
-  emergencyContacts: {
-    name: string;
-    phone: string;
-    relationship: string;
-  }[];
+  @Prop({ trim: true, default: '' })
+  childFirstName: string;
 
-  @Prop({ type: [String], default: [] })
+  @Prop({ trim: true, default: '' })
+  childMiddleName: string;
+
+  @Prop({ trim: true, default: '' })
+  childLastName: string;
+
+  @Prop({ trim: true, default: '' })
+  childsGender: string;
+
+  @Prop()
+  childDateOfBirth?: Date;
+
+  @Prop({ default: 'UNKNOWN' })
+  session: Session;
+
+  @Prop({ type: [String], default: ['BOXING'] })
   disciplines: Discipline[];
 
   @Prop({ default: 'ACTIVE' })
-  membershipStatus: 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'TRIAL';
+  membershipStatus: MembershipStatus;
 
-  @Prop({ required: true })
+  @Prop({ trim: true, default: '' })
+  allergies: string;
+
+  @Prop({ trim: true, default: '' })
+  medicalConditions: string;
+
+  @Prop({ trim: true, default: '' })
+  medications: string;
+
+  @Prop({ trim: true, default: '' })
+  emergencyContactName: string;
+
+  @Prop({ trim: true, default: '' })
+  emergencyContactPhone: string;
+
+  @Prop({ trim: true, default: '' })
+  safeguardingNotes: string;
+
+  @Prop({ default: true })
+  consentSafeguarding: boolean;
+
+  @Prop({ default: true })
+  consentData: boolean;
+
+  @Prop({ default: false })
+  consentPhotography: boolean;
+
+  @Prop({ default: 100 })
+  totalPrice: number;
+
+  @Prop({ trim: true, default: 'IMPORTED_FROM_SHEET' })
+  paymentIntentId: string;
+
+  @Prop({ trim: true, default: 'BRAWLERS_BOXING' })
   gymId: string;
+
+  @Prop({ trim: true, default: 'GOOGLE_SHEET_IMPORT' })
+  importSource: string;
 }
 
 export const MemberProfileSchema = SchemaFactory.createForClass(MemberProfile);

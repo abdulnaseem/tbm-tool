@@ -12,7 +12,7 @@ export function TopNav() {
           M
         </div>
         <span className="font-semibold text-slate-900 text-sm">
-          MMA Admin
+          Brawlers Boxing
         </span>
       </div>
       <div className="flex-1" />
