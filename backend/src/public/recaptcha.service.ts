@@ -19,8 +19,6 @@ export class RecaptchaService {
 
     const secret = this.configService.get<string>('RECAPTCHA_SECRET_KEY');
 
-    console.log('RECAPTCHA_SECRET_KEY:', secret);
-
     if (!secret) {
       throw new BadRequestException('reCAPTCHA secret key is missing');
     }
