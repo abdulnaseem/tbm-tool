@@ -13,7 +13,13 @@ async function bootstrap() {
 
   // CORS for Next.js
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://localhost:3001', 'http://192.168.0.46:3001'],
+    origin: [
+      'http://localhost:3000', 
+      'http://localhost:3001', 
+      'http://192.168.0.46:3001',
+      'https://tbm-signup.vercel.app',
+      'https://tbm-admin.vercel.app',
+    ],
     credentials: true,
   });
 
