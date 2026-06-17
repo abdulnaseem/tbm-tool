@@ -9,14 +9,21 @@ export class MailService {
   constructor(private readonly configService: ConfigService) {}
 
   private createTransporter() {
+    const port = Number(this.configService.get<string>('SMTP_PORT') || 465);
+    const secure =
+      this.configService.get<string>('SMTP_SECURE') === 'true' || port === 465;
+  
     return nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST'),
-      port: Number(this.configService.get<string>('SMTP_PORT') || 587),
-      secure: false,
+      host: this.configService.get<string>('SMTP_HOST') || 'smtp.gmail.com',
+      port,
+      secure,
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
+      connectionTimeout: 30000,
+      greetingTimeout: 30000,
+      socketTimeout: 30000,
     });
   }
 
