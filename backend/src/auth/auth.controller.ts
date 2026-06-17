@@ -1,10 +1,29 @@
-import { Controller, Post, Get, Body, Req, Res, UnauthorizedException } from '@nestjs/common';
-import { AuthService } from './auth.service';
+// backend/src/auth/auth.controller.ts
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Request, Response } from 'express';
+import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
+
+  private getCookieOptions() {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    return {
+      httpOnly: true,
+      sameSite: isProduction ? ('none' as const) : ('lax' as const),
+      secure: isProduction,
+    };
+  }
 
   @Post('login/staff')
   async loginStaff(
@@ -13,16 +32,16 @@ export class AuthController {
   ) {
     const { accessToken, refreshToken } = await this.auth.loginStaff(body);
 
+    const cookieOptions = this.getCookieOptions();
+
     res.cookie('accessToken', accessToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
+      ...cookieOptions,
+      maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: false,
+      ...cookieOptions,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
     return { ok: true };
@@ -30,8 +49,11 @@ export class AuthController {
 
   @Post('logout')
   logout(@Res({ passthrough: true }) res: Response) {
-    res.clearCookie('accessToken');
-    res.clearCookie('refreshToken');
+    const cookieOptions = this.getCookieOptions();
+
+    res.clearCookie('accessToken', cookieOptions);
+    res.clearCookie('refreshToken', cookieOptions);
+
     return { ok: true };
   }
 

@@ -1,3 +1,4 @@
+// backend/src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -6,19 +7,30 @@ import * as bcrypt from 'bcrypt';
 export class AuthService {
   constructor(private jwt: JwtService) {}
 
-  // DUMMY USERS
   private users = [
     {
       id: '1',
-      email: 'admin@gym.com',
+      email: 'jamee@thebutterflymovement.health',
       passwordHash: bcrypt.hashSync('password123', 10),
-      roles: ['ADMIN'],
+      roles: ['COACH'],
     },
     {
       id: '2',
-      email: 'coach@gym.com',
+      email: 'abdulhannan@thebutterflymovement.health',
       passwordHash: bcrypt.hashSync('password123', 10),
-      roles: ['COACH'],
+      roles: ['SUPER_ADMIN'],
+    },
+    {
+      id: '3',
+      email: 'emon@thebutterflymovement.health',
+      passwordHash: bcrypt.hashSync('password123', 10),
+      roles: ['STAFF'],
+    },
+    {
+      id: '4',
+      email: 'naseem@thebutterflymovement.health',
+      passwordHash: bcrypt.hashSync('password123', 10),
+      roles: ['SUPER_ADMIN'],
     },
   ];
 
