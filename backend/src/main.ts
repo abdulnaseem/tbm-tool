@@ -14,13 +14,15 @@ async function bootstrap() {
   // CORS for Next.js
   app.enableCors({
     origin: [
-      'http://localhost:3000', 
-      'http://localhost:3001', 
+      'http://localhost:3000',
+      'http://localhost:3001',
       'http://192.168.1.153:3001',
       'https://tbm-signup.vercel.app',
       'https://tbm-admin.vercel.app',
     ],
     credentials: true,
+    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
   const port = process.env.PORT || 4000;

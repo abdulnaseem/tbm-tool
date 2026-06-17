@@ -1,5 +1,4 @@
-// web-admin/src/lib/apiClient.ts
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { API_BASE } from './config';
 
 export async function apiFetch<T>(
   path: string,
@@ -15,7 +14,6 @@ export async function apiFetch<T>(
   });
 
   if (!res.ok) {
-    // 401/403 will be handled by caller
     throw new Error(`API error: ${res.status}`);
   }
 
