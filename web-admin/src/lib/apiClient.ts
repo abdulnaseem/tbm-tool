@@ -1,3 +1,4 @@
+// web-admin/src/lib/apiClient.ts
 import { API_BASE } from './config';
 
 export async function apiFetch<T>(

@@ -1,6 +1,14 @@
+// web-admin/src/context/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import { API_BASE } from '../lib/config';
 
 type User = {
   id: string;
@@ -24,11 +32,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchMe = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/auth/me', {
+      const res = await fetch(`${API_BASE}/auth/me`, {
         credentials: 'include',
       });
 
       if (!res.ok) throw new Error();
+
       const data = await res.json();
       setUser(data);
     } catch {
@@ -43,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchMe]);
 
   async function login(email: string, password: string) {
-    const res = await fetch('http://localhost:4000/api/auth/login/staff', {
+    const res = await fetch(`${API_BASE}/auth/login/staff`, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
@@ -52,13 +61,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!res.ok) return false;
 
-    // now fetch user ONCE after successful login
     await fetchMe();
     return true;
   }
 
   async function logout() {
-    await fetch('http://localhost:4000/api/auth/logout', {
+    await fetch(`${API_BASE}/auth/logout`, {
       method: 'POST',
       credentials: 'include',
     });
