@@ -20,9 +20,8 @@ export class AuthController {
 
     return {
       httpOnly: true,
-      // sameSite: isProduction ? ('none' as const) : ('lax' as const),
-      sameSite: 'none' as const,
-      secure: true,
+      sameSite: isProduction ? ('none' as const) : ('lax' as const),
+      secure: isProduction,
     };
   }
 
