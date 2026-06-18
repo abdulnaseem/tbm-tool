@@ -274,8 +274,9 @@ export default function SignupWizard() {
             The Butterfly Movement presents
           </p>
 
-          <h1 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-slate-900">
-            Brawlers Boxing Sign Up
+          <h1 className="mt-2 text-[28px] sm:text-4xl md:text-5xl font-bold leading-tight text-slate-900">
+            <span className="block whitespace-nowrap">Brawlers Boxing</span>
+            <span className="block">Sign Up</span>
           </h1>
 
           <p className="mx-auto mt-3 max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed">
