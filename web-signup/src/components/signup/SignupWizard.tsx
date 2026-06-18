@@ -242,19 +242,19 @@ export default function SignupWizard() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-8">
+    <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <form
         onSubmit={handleSubmit}
-        className="mx-auto max-w-4xl rounded-3xl bg-white p-6 md:p-8 shadow-xl border border-slate-100 space-y-8"
+        className="mx-auto w-full max-w-4xl rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 md:p-8 shadow-xl border border-slate-100 space-y-7 md:space-y-8"
       >
         <header className="text-center">
           <div className="flex flex-col items-center gap-4">
             <Image
               src="/butterfly-logo-black.jpeg"
               alt="The Butterfly Movement"
-              width={260}
-              height={180}
-              className="h-auto w-64 object-contain"
+              width={220}
+              height={150}
+              className="h-auto w-40 sm:w-52 md:w-64 object-contain"
               priority
             />
 
@@ -263,22 +263,22 @@ export default function SignupWizard() {
             <Image
               src="/brawlers-boxing.jpeg"
               alt="Brawlers Boxing"
-              width={220}
-              height={220}
-              className="h-auto w-40 object-contain"
+              width={180}
+              height={180}
+              className="h-auto w-28 sm:w-36 md:w-40 object-contain"
               priority
             />
           </div>
 
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[0.25em] text-green-700">
+          <p className="mt-4 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.18em] sm:tracking-[0.25em] text-green-700">
             The Butterfly Movement presents
           </p>
 
-          <h1 className="mt-2 text-3xl font-bold text-slate-900">
+          <h1 className="mt-2 text-3xl sm:text-4xl md:text-5xl font-bold leading-tight text-slate-900">
             Brawlers Boxing Sign Up
           </h1>
 
-          <p className="mt-2 text-slate-600">
+          <p className="mx-auto mt-3 max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed">
             Complete this form to register yourself or your child for the Brawlers
             Boxing programme.
           </p>
@@ -357,7 +357,7 @@ export default function SignupWizard() {
         </Section>
 
         <section>
-          <h2 className="text-2xl font-bold text-slate-900">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
             Medical information
           </h2>
 
@@ -369,8 +369,8 @@ export default function SignupWizard() {
           </div>
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-          <h2 className="text-2xl font-bold text-slate-900">
+        <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
+          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
             Terms and conditions
           </h2>
 
@@ -458,11 +458,11 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="text-2xl font-bold text-slate-900">
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
         {title}
       </h2>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-2">
         {children}
       </div>
     </section>
@@ -499,8 +499,9 @@ function Input({
           rounded-xl
           border
           border-slate-300
-          px-4
-          py-3
+          px-4 
+          py-3 
+          sm:py-3.5
           text-slate-900
           placeholder:text-slate-400
           outline-none
