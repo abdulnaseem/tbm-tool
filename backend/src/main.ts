@@ -17,11 +17,21 @@ async function bootstrap() {
       'http://localhost:3000',
       'http://localhost:3001',
       'http://192.168.1.153:3001',
+
+      // Vercel domains
       'https://tbm-signup.vercel.app',
       'https://tbm-admin.vercel.app',
+
+      // Production custom domains
+      'https://signup.thebutterflymovement.health',
+      'https://admin.thebutterflymovement.health',
+
+      // Main website (if it ever calls the API)
+      'https://www.thebutterflymovement.health',
+      'https://thebutterflymovement.health',
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
 
