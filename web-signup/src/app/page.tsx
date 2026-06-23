@@ -39,8 +39,7 @@ export default function HomePage() {
 
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
             Join the Brawlers Boxing programme. Membership runs on a rolling 3-month term basis, 
-            with payment due at the start of each term. Brawlers Boxing is part of The Butterfly Movement family,
-            alongside The Grapple Hub.
+            with payment due at the start of each term. Brawlers Boxing is part of The Butterfly Movement family.
           </p>
 
           <div className="mt-6 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
