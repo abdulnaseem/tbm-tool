@@ -105,8 +105,8 @@ export default function MemberDetailPage() {
   const [loading, setLoading] = useState(true);
   const [paymentSaving, setPaymentSaving] = useState(false);
 
-  const defaultStart = toDateInput(new Date());
-  const defaultEnd = toDateInput(addMonths(new Date(), 3));
+  const defaultStart = '2026-07-04';
+  const defaultEnd = '2026-09-26';
 
   async function loadData() {
     if (!memberId) return;
@@ -172,8 +172,8 @@ export default function MemberDetailPage() {
       currency: 'GBP',
       paymentMethod: form.get('paymentMethod') || 'CASH',
       status: 'PAID',
-      periodStart: '2026-07-04',
-      periodEnd: '2026-09-26',
+      periodStart: String(form.get('periodStart') || defaultStart),
+      periodEnd: String(form.get('periodEnd') || defaultEnd),
       notes: String(form.get('notes') || '').trim(),
       recordedBy: 'ADMIN',
     };
