@@ -158,12 +158,12 @@ export class MailService {
           <p>Hi ${data.guardianName || 'there'},</p>
   
           <p>
-            Thank you. We have received your payment for
-            <strong>Brawlers Boxing</strong>.
+            Thank you. We have received your payment for the <strong>Brawlers Boxing</strong> Programme, delivered by <strong>The Butterfly Movement</strong>.
           </p>
   
           <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:20px 0;">
             <strong>Participant:</strong> ${data.childName}<br/>
+            <strong>Programme:</strong> Brawlers Boxing<br/>
             <strong>Amount paid:</strong> £${Number(data.amount).toFixed(2)}<br/>
             <strong>Payment method:</strong> ${data.paymentMethod}<br/>
             <strong>Payment date:</strong> ${paymentDate}<br/>
@@ -176,9 +176,11 @@ export class MailService {
           </p>
   
           <p>
-            Kind regards,<br/>
-            <strong>The Butterfly Movement</strong><br/>
-            Brawlers Boxing Team
+            Kind regards,<br/></br>
+            <strong>The Butterfly Movement Team</strong><br/>
+            Brawlers Boxing Programme</br>
+            info@thebutterflymovement.health</br>
+            www.thebutterflymovement.health</br>
           </p>
         </div>
       `,
