@@ -172,8 +172,8 @@ export default function MemberDetailPage() {
       currency: 'GBP',
       paymentMethod: form.get('paymentMethod') || 'CASH',
       status: 'PAID',
-      periodStart: form.get('periodStart'),
-      periodEnd: form.get('periodEnd'),
+      periodStart: '2026-07-04',
+      periodEnd: '2026-09-26',
       notes: String(form.get('notes') || '').trim(),
       recordedBy: 'ADMIN',
     };

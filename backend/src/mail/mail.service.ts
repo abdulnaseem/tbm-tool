@@ -111,4 +111,80 @@ export class MailService {
     this.logger.log(`Signup confirmation email sent to ${data.to}`);
     this.logger.log(JSON.stringify(result));
   }
+
+  async sendPaymentReceipt(data: {
+    to: string;
+    guardianName: string;
+    childName: string;
+    amount: number;
+    paymentMethod: string;
+    paidAt: string;
+    periodStart: string;
+    periodEnd: string;
+  }) {
+    if (!data.to) return;
+  
+    const from =
+      this.configService.get<string>('MAIL_FROM') ||
+      'The Butterfly Movement <info@thebutterflymovement.health>';
+  
+    const formatLongUkDate = (value: string) => {
+      const date = new Date(value);
+  
+      if (Number.isNaN(date.getTime())) {
+        return value;
+      }
+  
+      return date.toLocaleDateString('en-GB', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+    };
+  
+    const paymentDate = formatLongUkDate(data.paidAt);
+    const periodStart = formatLongUkDate(data.periodStart);
+    const periodEnd = formatLongUkDate(data.periodEnd);
+  
+    const result = await this.resend.emails.send({
+      from,
+      to: data.to,
+      subject: 'Payment Receipt | Brawlers Boxing',
+      html: `
+        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 700px; margin: 0 auto; color: #0f172a; line-height: 1.7;">
+          <h1 style="color:#15803d;">Payment Receipt</h1>
+  
+          <p>Hi ${data.guardianName || 'there'},</p>
+  
+          <p>
+            Thank you. We have received your payment for
+            <strong>Brawlers Boxing</strong>.
+          </p>
+  
+          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:20px 0;">
+            <strong>Participant:</strong> ${data.childName}<br/>
+            <strong>Amount paid:</strong> £${Number(data.amount).toFixed(2)}<br/>
+            <strong>Payment method:</strong> ${data.paymentMethod}<br/>
+            <strong>Payment date:</strong> ${paymentDate}<br/>
+            <strong>Payment covers:</strong> ${periodStart} to ${periodEnd}
+          </div>
+  
+          <p>
+            This payment covers the Brawlers Boxing programme period from
+            <strong>${periodStart}</strong> to <strong>${periodEnd}</strong>.
+          </p>
+  
+          <p>
+            Kind regards,<br/>
+            <strong>The Butterfly Movement</strong><br/>
+            Brawlers Boxing Team
+          </p>
+        </div>
+      `,
+    });
+  
+    this.logger.log(`Payment receipt sent to ${data.to}`);
+    this.logger.log(JSON.stringify(result));
+  }
 }
