@@ -39,15 +39,16 @@ export class MailService {
           <div style="text-align:center; padding:20px 0;">
             <h1 style="margin:0; color:#15803d;">Registration Received</h1>
             <p style="margin-top:8px; color:#64748b;">
-              The Butterfly Movement • Brawlers Boxing  
+              Brawlers Boxing Programme<br/>
+              The Butterfly Movement
             </p>
           </div>
 
           <p>Hi ${data.guardianName || 'there'},</p>
 
           <p>
-            Thank you for submitting your registration for
-            <strong>Brawlers Boxing</strong>, part of
+            Thank you for submitting your registration for the
+            <strong>Brawlers Boxing Programme</strong>, delivered by
             <strong>The Butterfly Movement</strong>.
           </p>
 
@@ -55,6 +56,7 @@ export class MailService {
 
           <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:20px 0;">
             <strong>Participant:</strong> ${data.childName}<br/>
+            <strong>Programme:</strong> Brawlers Boxing<br/>
             <strong>Session:</strong> ${data.session}
           </div>
 
@@ -90,10 +92,12 @@ export class MailService {
           </div>
 
           <p>
-            If you have any questions, please reply to this email or contact us at:
+            A member of <strong>The Butterfly Movement</strong> team will review your registration and contact you shortly regarding your place on the programme.
           </p>
 
           <p>
+            If you have any questions, please reply to this email or contact us at:
+            <br/>
             <strong>info@thebutterflymovement.health</strong>
           </p>
 
@@ -101,8 +105,10 @@ export class MailService {
 
           <p style="font-size:14px; color:#64748b;">
             Kind regards,<br/>
-            <strong>The Butterfly Movement</strong><br/>
-            Brawlers Boxing Team
+            <strong>The Butterfly Movement Team</strong><br/>
+            Brawlers Boxing Programme<br/>
+            info@thebutterflymovement.health<br/>
+            www.thebutterflymovement.health
           </p>
         </div>
       `,
@@ -175,12 +181,12 @@ export class MailService {
             <strong>${periodStart}</strong> to <strong>${periodEnd}</strong>.
           </p>
   
-          <p>
-            Kind regards,<br/></br>
+          <p style="font-size:14px; color:#64748b;">
+            Kind regards,<br/>
             <strong>The Butterfly Movement Team</strong><br/>
-            Brawlers Boxing Programme</br>
-            info@thebutterflymovement.health</br>
-            www.thebutterflymovement.health</br>
+            Brawlers Boxing Programme<br/>
+            info@thebutterflymovement.health<br/>
+            www.thebutterflymovement.health
           </p>
         </div>
       `,
