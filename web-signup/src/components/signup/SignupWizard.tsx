@@ -101,8 +101,12 @@ export default function SignupWizard() {
       return 'You must agree to the terms and conditions before submitting.';
     }
 
-    if (!form.consentSafeguarding || !form.consentData) {
-      return 'Safeguarding and data consent are required.';
+    if (
+      !form.consentSafeguarding ||
+      !form.consentData ||
+      !form.consentPhotography
+    ) {
+      return 'You must provide all required consents before submitting.';
     }
 
     if (form.accountType === 'GUARDIAN') {
@@ -397,32 +401,33 @@ export default function SignupWizard() {
             </p>
           </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-4">
             <Checkbox
-              label="I agree to the terms and conditions."
+              label="I have read and agree to the Terms and Conditions."
               checked={form.agreedToTerms}
               onChange={(v) => update('agreedToTerms', v)}
               required
             />
 
             <Checkbox
-              label="I consent to safeguarding checks and procedures."
+              label="I consent to The Butterfly Movement carrying out any necessary safeguarding checks and procedures required to ensure the safety and wellbeing of participants."
               checked={form.consentSafeguarding}
               onChange={(v) => update('consentSafeguarding', v)}
               required
             />
 
             <Checkbox
-              label="I consent to my data being stored securely for membership purposes."
+              label="I understand that my personal data will be processed and stored securely for membership, safeguarding, programme administration, and participant communications purposes."
               checked={form.consentData}
               onChange={(v) => update('consentData', v)}
               required
             />
 
             <Checkbox
-              label="I consent to photography/video use."
+              label="I understand that photographs and videos may be taken during sessions and events. I consent to The Butterfly Movement using photographs and videos of my child for promotional and community engagement purposes on its official social media channels, including Instagram, TikTok, WhatsApp Status, and similar platforms."
               checked={form.consentPhotography}
               onChange={(v) => update('consentPhotography', v)}
+              required
             />
           </div>
         </section>
@@ -602,7 +607,7 @@ function Checkbox({
         className="mt-1 h-4 w-4 rounded border-slate-300 text-green-700 focus:ring-green-600"
       />
 
-      <span className="text-sm font-medium text-slate-800">
+      <span className="text-sm leading-6 font-medium text-slate-800">
         {label}
         {required && (
           <span className="ml-1 text-red-500">*</span>

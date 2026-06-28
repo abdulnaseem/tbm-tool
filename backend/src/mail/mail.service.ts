@@ -33,13 +33,13 @@ export class MailService {
     const result = await this.resend.emails.send({
       from,
       to: data.to,
-      subject: 'Welcome to Brawlers Boxing | The Butterfly Movement',
+      subject: 'Welcome to The Butterfly Movement • Brawlers Boxing',
       html: `
         <div style="font-family: Arial, Helvetica, sans-serif; max-width: 700px; margin: 0 auto; color: #0f172a; line-height: 1.7;">
           <div style="text-align:center; padding:20px 0;">
             <h1 style="margin:0; color:#15803d;">Registration Received</h1>
             <p style="margin-top:8px; color:#64748b;">
-              Brawlers Boxing • The Butterfly Movement
+              The Butterfly Movement • Brawlers Boxing  
             </p>
           </div>
 
