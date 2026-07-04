@@ -68,6 +68,29 @@ export default function MembersPage() {
   
     return sessionMatches && statusMatches && searchMatches;
   });
+  
+  const getSessionCount = (session: 'ALL' | 'CUBS' | 'TIGERS' | 'UNKNOWN') => {
+    if (session === 'ALL') return members.length;
+  
+    return members.filter(
+      (member) => (member.session || 'UNKNOWN') === session,
+    ).length;
+  };
+  
+  const getStatusCount = (status: 'ALL' | 'ACTIVE' | 'EXPIRED') => {
+    const sessionFiltered =
+      sessionFilter === 'ALL'
+        ? members
+        : members.filter(
+            (member) => (member.session || 'UNKNOWN') === sessionFilter,
+          );
+  
+    if (status === 'ALL') return sessionFiltered.length;
+  
+    return sessionFiltered.filter(
+      (member) => member.membershipStatus === status,
+    ).length;
+  };
 
   useEffect(() => {
     apiFetch<Member[]>('/members')
@@ -121,7 +144,7 @@ export default function MembersPage() {
                   : 'bg-white text-slate-600 border border-slate-200'
               }`}
             >
-              {tab === 'ALL' ? 'All' : tab}
+              {tab === 'ALL' ? 'All' : tab} ({getSessionCount(tab)})
             </button>
           ))}
         </div>
@@ -137,7 +160,7 @@ export default function MembersPage() {
                   : 'bg-white text-slate-600 border border-slate-200'
               }`}
             >
-              {status === 'ALL' ? 'All statuses' : status}
+              {status === 'ALL' ? 'All statuses' : status} ({getStatusCount(status)})
             </button>
           ))}
         </div>
