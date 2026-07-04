@@ -44,9 +44,16 @@ export default function MembersPage() {
     'ALL' | 'CUBS' | 'TIGERS' | 'UNKNOWN'
   >('ALL');
 
+  const [statusFilter, setStatusFilter] = useState<
+    'ALL' | 'ACTIVE' | 'EXPIRED'
+  >('ALL');
+
   const filteredMembers = members.filter((member) => {
     const sessionMatches =
       sessionFilter === 'ALL' || (member.session || 'UNKNOWN') === sessionFilter;
+  
+    const statusMatches =
+      statusFilter === 'ALL' || member.membershipStatus === statusFilter;
   
     const childFullName = [
       member.childFirstName,
@@ -59,7 +66,7 @@ export default function MembersPage() {
   
     const searchMatches = childFullName.includes(search.toLowerCase());
   
-    return sessionMatches && searchMatches;
+    return sessionMatches && statusMatches && searchMatches;
   });
 
   useEffect(() => {
@@ -115,6 +122,22 @@ export default function MembersPage() {
               }`}
             >
               {tab === 'ALL' ? 'All' : tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="mb-4 flex gap-2">
+          {(['ALL', 'ACTIVE', 'EXPIRED'] as const).map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`rounded-xl px-4 py-2 text-sm font-medium ${
+                statusFilter === status
+                  ? 'bg-brand-600 text-white'
+                  : 'bg-white text-slate-600 border border-slate-200'
+              }`}
+            >
+              {status === 'ALL' ? 'All statuses' : status}
             </button>
           ))}
         </div>
