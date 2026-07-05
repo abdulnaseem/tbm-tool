@@ -3,8 +3,8 @@ import type { Metadata } from 'next';
 import { AuthProvider } from '../context/AuthContext';
 
 export const metadata: Metadata = {
-  title: 'Brawlers Boxing',
-  description: 'Admin portal for Brawlers Boxing',
+  title: 'Admin - The Butterfly Movement',
+  description: 'Admin portal for The Butterfly Movement',
 };
 
 export default function RootLayout({
