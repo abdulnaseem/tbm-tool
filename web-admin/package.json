@@ -8,12 +8,15 @@
     "start": "next start"
   },
   "dependencies": {
+    "file-saver": "^2.0.5",
     "next": "14.1.0",
     "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "react-dom": "18.2.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/file-saver": "^2.0.7",
     "@types/node": "^20.19.25",
     "@types/react": "^18.0.28",
     "autoprefixer": "^10.4.23",

@@ -6,6 +6,8 @@ import { useEffect, useState } from 'react';
 import { Protected } from '../../components/Protected';
 import { Shell } from '../../components/layout/Shell';
 import { apiFetch } from '../../lib/apiClient';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 type Member = {
   _id: string;
@@ -101,6 +103,69 @@ export default function MembersPage() {
       })
       .finally(() => setLoading(false));
   }, []);
+  
+  const handleExportPaymentSheet = () => {
+    const rows = filteredMembers.map((member) => ({
+      "Child Name": [
+        member.childFirstName,
+        member.childMiddleName,
+        member.childLastName,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    
+      Session: member.session || "",
+    
+      "Membership Status": member.membershipStatus || "",
+    
+      Disciplines: member.disciplines?.join(", ") || "",
+    
+      "Date of Birth": formatDate(member.childDateOfBirth),
+    
+      "Parent/Guardian Name": [
+        member.guardianFirstName,
+        member.guardianLastName,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    
+      "Paid?": "",
+    
+      Notes: "",
+    }));
+  
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+  
+    worksheet["!cols"] = [
+      { wch: 28 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 14 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 30 },
+      { wch: 12 },
+      { wch: 35 },
+    ];
+  
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Payment Register");
+  
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+  
+    const file = new Blob([excelBuffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+  
+    saveAs(
+      file,
+      `payment-register-${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
 
   return (
     <Protected roles={['COACH', 'ADMIN', 'SUPER_ADMIN']}>
@@ -116,12 +181,21 @@ export default function MembersPage() {
             </p>
           </div>
 
-          <Link
-            href="/members/new"
-            className="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-700"
-          >
-            + Add member
-          </Link>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportPaymentSheet}
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-soft hover:bg-slate-50"
+            >
+              Export Payment Register
+            </button>
+
+            <Link
+              href="/members/new"
+              className="inline-flex items-center rounded-xl bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-soft hover:bg-brand-700"
+            >
+              + Add member
+            </Link>
+          </div>
         </div>
 
         <div className="mb-4">
