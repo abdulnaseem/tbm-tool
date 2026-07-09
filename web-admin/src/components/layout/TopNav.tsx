@@ -6,19 +6,26 @@ export function TopNav() {
   const { logout } = useAuth();
 
   return (
-    <header className="h-16 px-4 md:px-8 border-b border-slate-100 bg-white flex items-center justify-between">
-      <div className="md:hidden flex items-center gap-2">
-        <div className="h-9 w-9 rounded-2xl bg-brand-500 flex items-center justify-center text-white font-bold text-lg">
+    <header className="flex h-16 items-center justify-between border-b border-slate-100 bg-white px-16 md:px-8">
+      <div className="flex items-center gap-2 md:hidden">
+        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-lg font-bold text-white">
           M
         </div>
-        <span className="font-semibold text-slate-900 text-sm">
+        <span className="text-sm font-semibold text-slate-900">
           Brawlers Boxing
         </span>
       </div>
-      <div className="flex-1" />
+
+      <div className="hidden md:block">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          Admin portal
+        </p>
+      </div>
+
       <button
+        type="button"
         onClick={() => logout()}
-        className="text-xs md:text-sm rounded-full border border-slate-200 px-3 py-1.5 hover:border-slate-300 hover:bg-slate-50 transition"
+        className="rounded-full border border-slate-200 px-3 py-1.5 text-xs transition hover:border-slate-300 hover:bg-slate-50 md:text-sm"
       >
         Logout
       </button>
