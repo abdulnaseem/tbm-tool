@@ -4,11 +4,15 @@ import { TopNav } from './TopNav';
 
 export function Shell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="flex min-h-screen overflow-x-hidden bg-slate-50">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
+
+      <div className="flex min-w-0 flex-1 flex-col">
         <TopNav />
-        <main className="flex-1 px-4 md:px-8 py-6">{children}</main>
+
+        <main className="min-w-0 flex-1 overflow-x-hidden px-4 py-6 md:px-8">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -6,8 +6,7 @@ export function TopNav() {
   const { logout } = useAuth();
 
   return (
-    <header className="flex h-16 items-center justify-between border-b border-slate-100 bg-white px-16 md:px-8">
-      <div className="flex items-center gap-2 md:hidden">
+    <header className="flex h-16 min-w-0 items-center justify-between gap-3 border-b border-slate-100 bg-white pl-16 pr-4 md:px-8">      <div className="flex items-center gap-2 md:hidden">
         <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-lg font-bold text-white">
           M
         </div>
