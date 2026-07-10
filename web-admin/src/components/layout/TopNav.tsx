@@ -6,10 +6,12 @@ export function TopNav() {
   const { logout } = useAuth();
 
   return (
-    <header className="flex h-16 min-w-0 items-center justify-between gap-3 border-b border-slate-100 bg-white pl-16 pr-4 md:px-8">      <div className="flex items-center gap-2 md:hidden">
+    <header className="sticky top-0 z-30 flex h-16 min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pl-16 pr-4 backdrop-blur md:px-8">
+      <div className="flex items-center gap-2 md:hidden">
         <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-lg font-bold text-white">
           M
         </div>
+
         <span className="text-sm font-semibold text-slate-900">
           Brawlers Boxing
         </span>
@@ -23,7 +25,7 @@ export function TopNav() {
 
       <button
         type="button"
-        onClick={() => logout()}
+        onClick={logout}
         className="rounded-full border border-slate-200 px-3 py-1.5 text-xs transition hover:border-slate-300 hover:bg-slate-50 md:text-sm"
       >
         Logout
