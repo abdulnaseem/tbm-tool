@@ -9,7 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState('naseem@thebutterflymovement.health');
-  const [password, setPassword] = useState('password123');
+  const [password, setPassword] = useState('TheButterflyMovement25@');
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: FormEvent) {
