@@ -9,7 +9,8 @@
         "start:prod": "node dist/main.js",
         "start:dev": "nest start --watch",
         "start": "node dist/main.js",
-        "import:members": "ts-node scripts/import-members.ts"
+        "import:members": "ts-node scripts/import-members.ts",
+        "seed:admins": "ts-node scripts/seed-admins.ts"
     },
     "dependencies": {
         "@nestjs/common": "^10.4.20",

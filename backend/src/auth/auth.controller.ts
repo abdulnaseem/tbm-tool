@@ -3,75 +3,167 @@ import {
   Body,
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
   Post,
   Req,
   Res,
-  UnauthorizedException,
+  UseGuards,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { ConfigService } from '@nestjs/config';
+import { Request, Response, CookieOptions } from 'express';
+
 import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { UserRole } from '../users/enums/user-role.enum';
+import { JwtService } from '@nestjs/jwt';
+
+type AccessRequest = Request & {
+  user: {
+    id: string;
+    email: string;
+    roles: UserRole[];
+    isActive: boolean;
+  };
+};
+
+type RefreshRequest = Request & {
+  user: {
+    user: {
+      id: string;
+      email: string;
+      roles: UserRole[];
+      isActive: boolean;
+    };
+    refreshToken: string;
+  };
+};
 
 @Controller('auth')
 export class AuthController {
-  constructor(private auth: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly config: ConfigService,
+    private readonly jwt: JwtService,
+  ) {}
 
-  private getCookieOptions() {
-    const isProduction = process.env.NODE_ENV === 'production';
+  private getCookieOptions(): CookieOptions {
+    const isProduction =
+      this.config.get<string>('NODE_ENV') === 'production';
+
+    const configuredSameSite =
+      this.config.get<string>('COOKIE_SAME_SITE');
+
+    const sameSite: CookieOptions['sameSite'] =
+      configuredSameSite === 'none'
+        ? 'none'
+        : configuredSameSite === 'strict'
+          ? 'strict'
+          : 'lax';
 
     return {
       httpOnly: true,
-      sameSite: isProduction ? ('none' as const) : ('lax' as const),
       secure: isProduction,
+      sameSite,
+      path: '/',
     };
   }
 
-  @Post('login/staff')
-  async loginStaff(
-    @Body() body: { email: string; password: string },
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const { accessToken, refreshToken } = await this.auth.loginStaff(body);
-
-    const cookieOptions = this.getCookieOptions();
+  private setAuthCookies(
+    res: Response,
+    accessToken: string,
+    refreshToken: string,
+  ): void {
+    const options = this.getCookieOptions();
 
     res.cookie('accessToken', accessToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: 15 * 60 * 1000,
     });
 
     res.cookie('refreshToken', refreshToken, {
-      ...cookieOptions,
+      ...options,
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+  }
 
-    return { ok: true };
+  private clearAuthCookies(res: Response): void {
+    const options = this.getCookieOptions();
+
+    res.clearCookie('accessToken', options);
+    res.clearCookie('refreshToken', options);
+  }
+
+  @Post('login/staff')
+  @HttpCode(HttpStatus.OK)
+  async loginStaff(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.loginStaff(dto);
+
+    this.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+    );
+
+    return {
+      ok: true,
+      user: result.user,
+    };
+  }
+
+  @Post('refresh')
+  @UseGuards(JwtRefreshGuard)
+  @HttpCode(HttpStatus.OK)
+  async refresh(
+    @Req() req: RefreshRequest,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.refresh(
+      req.user.user,
+      req.user.refreshToken,
+    );
+
+    this.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+    );
+
+    return {
+      ok: true,
+      user: result.user,
+    };
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    const cookieOptions = this.getCookieOptions();
-
-    res.clearCookie('accessToken', cookieOptions);
-    res.clearCookie('refreshToken', cookieOptions);
-
+  @HttpCode(HttpStatus.OK)
+  async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = req.cookies?.refreshToken;
+  
+    if (refreshToken) {
+      const decoded = this.jwt.decode(refreshToken) as {
+        sub?: string;
+      } | null;
+  
+      await this.authService.logout(decoded?.sub);
+    }
+  
+    this.clearAuthCookies(res);
+  
     return { ok: true };
   }
 
   @Get('me')
-  me(@Req() req: Request) {
-    const token = req.cookies?.accessToken;
-    if (!token) throw new UnauthorizedException();
-
-    const payload = this.auth.getUserFromToken(token);
-    if (!payload) throw new UnauthorizedException();
-
-    const user = this.auth.findById(payload.sub);
-    if (!user) throw new UnauthorizedException();
-
-    return {
-      id: user.id,
-      email: user.email,
-      roles: user.roles,
-    };
+  @UseGuards(JwtAuthGuard)
+  me(@Req() req: AccessRequest) {
+    return req.user;
   }
 }

@@ -1,25 +1,47 @@
 // backend/src/auth/strategies/jwt.strategy.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
-import { AuthService } from '../auth.service';
+import { UsersService } from '../../users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private authService: AuthService) {
+  constructor(
+    private readonly usersService: UsersService,
+    config: ConfigService,
+  ) {
+    const secret = config.get<string>('JWT_ACCESS_SECRET');
+
+    if (!secret) {
+      throw new Error('JWT_ACCESS_SECRET is not configured');
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (req) => req?.cookies?.accessToken
+        (req) => req?.cookies?.accessToken ?? null,
       ]),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'supersecret',
+      secretOrKey: secret,
     });
   }
 
   async validate(payload: JwtPayload) {
-    const user = this.authService.findById(payload.sub);
-    if (!user) throw new UnauthorizedException();
-    return user;
+    if (
+      payload.tokenType !== 'access' ||
+      payload.clientType !== 'WEB_PORTAL'
+    ) {
+      throw new UnauthorizedException();
+    }
+
+    const user = await this.usersService.findById(payload.sub);
+
+    if (!user?.isActive) {
+      throw new UnauthorizedException();
+    }
+
+    return this.usersService.toSafeUser(user);
   }
 }
