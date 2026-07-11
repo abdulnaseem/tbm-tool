@@ -29,7 +29,7 @@ export class AuthService {
     {
       id: '4',
       email: 'naseem@thebutterflymovement.health',
-      passwordHash: bcrypt.hashSync('password123', 10),
+      passwordHash: bcrypt.hashSync('TheButterflyMovement25@', 10),
       roles: ['SUPER_ADMIN'],
     },
   ];
