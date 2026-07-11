@@ -7,6 +7,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Protected } from '../../../components/Protected';
 import { Shell } from '../../../components/layout/Shell';
 import { apiFetch } from '../../../lib/apiClient';
+import { useAuth } from '../../../context/AuthContext';
 
 type MemberDetail = {
   _id: string;
@@ -136,6 +137,12 @@ export default function MemberDetailPage() {
   const [loading, setLoading] = useState(true);
   const [paymentSaving, setPaymentSaving] = useState(false);
 
+  const { user } = useAuth();
+
+  const canManageMembers =
+    user?.roles.includes('ADMIN') ||
+    user?.roles.includes('SUPER_ADMIN');
+
   const defaultStart = '2026-07-04';
   const defaultEnd = '2026-09-26';
 
@@ -177,7 +184,7 @@ export default function MemberDetailPage() {
         method: 'DELETE',
       });
 
-      router.push('/members');
+      router.replace('/members');
     } catch (err) {
       console.error('Failed to delete member:', err);
       alert('Failed to delete member');
@@ -204,7 +211,7 @@ export default function MemberDetailPage() {
       periodStart: String(form.get('periodStart') || defaultStart),
       periodEnd: String(form.get('periodEnd') || defaultEnd),
       notes: String(form.get('notes') || '').trim(),
-      recordedBy: 'ADMIN',
+      recordedBy: user?.email,
     };
 
     try {
@@ -452,102 +459,107 @@ export default function MemberDetailPage() {
 
           <div className="grid gap-4 xl:grid-cols-3">
             {/* Payment Form */}
+            {canManageMembers && (
+              <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
+                <h2 className="mb-4 text-sm font-semibold text-slate-900">
+                  Record payment
+                </h2>
 
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
-              <h2 className="mb-4 text-sm font-semibold text-slate-900">
-                Record payment
-              </h2>
+                <form onSubmit={handleAddPayment} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-500">
+                      Amount (£)
+                    </label>
 
-              <form onSubmit={handleAddPayment} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">
-                    Amount (£)
-                  </label>
+                    <input
+                      name="amount"
+                      type="number"
+                      defaultValue={100}
+                      min={0}
+                      step="0.01"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                    />
+                  </div>
 
-                  <input
-                    name="amount"
-                    type="number"
-                    defaultValue={100}
-                    min={0}
-                    step="0.01"
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                  />
-                </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-500">
+                      Payment method
+                    </label>
 
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">
-                    Payment method
-                  </label>
+                    <select
+                      name="paymentMethod"
+                      defaultValue="CASH"
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                    >
+                      <option value="CASH">Cash</option>
+                      <option value="CARD">Card</option>
+                      <option value="BANK_TRANSFER">
+                        Bank Transfer
+                      </option>
+                    </select>
+                  </div>
 
-                  <select
-                    name="paymentMethod"
-                    defaultValue="CASH"
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-500">
+                        Membership starts
+                      </label>
+
+                      <input
+                        name="periodStart"
+                        type="date"
+                        defaultValue={defaultStart}
+                        required
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-500">
+                        Membership ends
+                      </label>
+
+                      <input
+                        name="periodEnd"
+                        type="date"
+                        defaultValue={defaultEnd}
+                        required
+                        className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-1 block text-xs font-medium text-slate-500">
+                      Notes
+                    </label>
+
+                    <textarea
+                      name="notes"
+                      rows={4}
+                      placeholder="Optional notes..."
+                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={paymentSaving}
+                    className="w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    <option value="CASH">Cash</option>
-                    <option value="CARD">Card</option>
-                    <option value="BANK_TRANSFER">
-                      Bank Transfer
-                    </option>
-                  </select>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-500">
-                      Membership starts
-                    </label>
-
-                    <input
-                      name="periodStart"
-                      type="date"
-                      defaultValue={defaultStart}
-                      required
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-500">
-                      Membership ends
-                    </label>
-
-                    <input
-                      name="periodEnd"
-                      type="date"
-                      defaultValue={defaultEnd}
-                      required
-                      className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-500">
-                    Notes
-                  </label>
-
-                  <textarea
-                    name="notes"
-                    rows={4}
-                    placeholder="Optional notes..."
-                    className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={paymentSaving}
-                  className="w-full rounded-xl bg-brand-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {paymentSaving ? 'Saving payment...' : 'Record payment'}
-                </button>
-              </form>
-            </section>
+                    {paymentSaving ? 'Saving payment...' : 'Record payment'}
+                  </button>
+                </form>
+              </section>
+            )}
 
             {/* Payment History */}
 
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 xl:col-span-2">
+            <section
+              className={`rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 ${
+                canManageMembers ? 'xl:col-span-2' : 'xl:col-span-3'
+              }`}
+            >              
               <div className="mb-4 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-900">
                   Payment history
@@ -608,14 +620,15 @@ export default function MemberDetailPage() {
                           </div>
                         )}
 
-                        <button
-                          onClick={() =>
-                            handleDeletePayment(payment._id)
-                          }
-                          className="mt-4 w-full rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
-                        >
-                          Delete payment
-                        </button>
+                        {canManageMembers && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePayment(payment._id)}
+                            className="text-sm font-medium text-red-600 hover:text-red-700"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -674,14 +687,15 @@ export default function MemberDetailPage() {
                             </td>
 
                             <td className="px-4 py-3 text-right">
-                              <button
-                                onClick={() =>
-                                  handleDeletePayment(payment._id)
-                                }
-                                className="text-sm font-medium text-red-600 hover:text-red-700"
-                              >
-                                Delete
-                              </button>
+                              {canManageMembers && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeletePayment(payment._id)}
+                                  className="text-sm font-medium text-red-600 hover:text-red-700"
+                                >
+                                  Delete
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -693,24 +707,26 @@ export default function MemberDetailPage() {
             </section>
           </div>
 
-          <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-100 bg-white/95 p-3 shadow-soft backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0 sm:shadow-none">
-            <div className="flex gap-3 sm:justify-end">
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="flex-1 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 transition hover:bg-red-100 sm:flex-none sm:py-2"
-              >
-                Delete member
-              </button>
+          {canManageMembers && (
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-100 bg-white/95 p-3 shadow-soft backdrop-blur sm:static sm:border-t-0 sm:bg-transparent sm:p-0 sm:shadow-none">
+              <div className="flex gap-3 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="flex-1 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700 transition hover:bg-red-100 sm:flex-none sm:py-2"
+                >
+                  Delete member
+                </button>
 
-              <Link
-                href={`/members/${memberId}/edit`}
-                className="flex-1 rounded-xl bg-brand-600 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-brand-700 sm:flex-none sm:py-2"
-              >
-                Edit member
-              </Link>
+                <Link
+                  href={`/members/${memberId}/edit`}
+                  className="flex-1 rounded-xl bg-brand-600 px-4 py-3 text-center text-sm font-medium text-white transition hover:bg-brand-700 sm:flex-none sm:py-2"
+                >
+                  Edit member
+                </Link>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </Shell>
     </Protected>

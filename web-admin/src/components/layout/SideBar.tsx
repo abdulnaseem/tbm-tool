@@ -1,22 +1,50 @@
+// web-admin/src/components/layout/SideBar.tsx
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
 
-type IconName = 'dashboard' | 'members' | 'attendance';
+import { useAuth } from '../../context/AuthContext';
+import type { UserRole } from '../../types/auth';
+
+type IconName = 'dashboard' | 'members' | 'attendance' | 'users';
 
 type SidebarProps = {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
 };
 
-const navItems: { href: string; label: string; icon: IconName }[] = [
-  { href: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
-  { href: '/members', label: 'Members', icon: 'members' },
-  { href: '/attendance', label: 'Attendance', icon: 'attendance' },
+type NavItem = {
+  href: string;
+  label: string;
+  icon: IconName;
+  roles?: UserRole[];
+};
+
+const navItems: NavItem[] = [
+  {
+    href: '/dashboard',
+    label: 'Dashboard',
+    icon: 'dashboard',
+  },
+  {
+    href: '/members',
+    label: 'Members',
+    icon: 'members',
+  },
+  {
+    href: '/attendance',
+    label: 'Attendance',
+    icon: 'attendance',
+  },
+  {
+    href: '/users',
+    label: 'Users',
+    icon: 'users',
+    roles: ['SUPER_ADMIN'],
+  },
 ];
 
 function Icon({ name }: { name: IconName }) {
@@ -54,6 +82,22 @@ function Icon({ name }: { name: IconName }) {
     );
   }
 
+  if (name === 'users') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10Zm-8 9a8 8 0 0 1 16 0H4Zm15.5-9.5h2v2h-2v2h-2v-2h-2v-2h2v-2h2v2Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
   return (
     <svg
       className={className}
@@ -81,6 +125,16 @@ export function Sidebar({
     const email = user?.email || 'User';
     return email.charAt(0).toUpperCase();
   }, [user?.email]);
+
+  const visibleNavItems = useMemo(
+    () =>
+      navItems.filter(
+        (item) =>
+          !item.roles ||
+          item.roles.some((role) => user?.roles.includes(role)),
+      ),
+    [user],
+  );
 
   useEffect(() => {
     setMobileOpen(false);
@@ -171,7 +225,7 @@ export function Sidebar({
         className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-4"
         aria-label="Main navigation"
       >
-        {navItems.map((item) => {
+        {visibleNavItems.map((item) => {
           const active =
             pathname === item.href || pathname.startsWith(`${item.href}/`);
 
@@ -215,7 +269,7 @@ export function Sidebar({
                 </div>
 
                 <div className="truncate text-[10px] font-medium uppercase tracking-wide text-slate-500">
-                  {(user?.roles || []).join(', ')}
+                  {user.roles.join(', ')}
                 </div>
               </div>
             )}

@@ -8,6 +8,7 @@ import { Shell } from '../../components/layout/Shell';
 import { apiFetch } from '../../lib/apiClient';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { useAuth } from '../../context/AuthContext';
 
 type Member = {
   _id: string;
@@ -93,6 +94,12 @@ export default function MembersPage() {
   const [search, setSearch] = useState('');
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+
+  const { user } = useAuth();
+
+  const canManageMembers =
+    user?.roles.includes('ADMIN') ||
+    user?.roles.includes('SUPER_ADMIN');
 
   useEffect(() => {
     apiFetch<Member[]>('/members')
@@ -209,20 +216,24 @@ export default function MembersPage() {
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-              <button
-                type="button"
-                onClick={handleExportPaymentSheet}
-                className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-soft transition hover:bg-slate-50 sm:w-auto"
-              >
-                Export Payment Register
-              </button>
+              {canManageMembers && (
+                <button
+                  type="button"
+                  onClick={handleExportPaymentSheet}
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-soft transition hover:bg-slate-50 sm:w-auto"
+                >
+                  Export Payment Register
+                </button>
+              )}
 
-              <Link
-                href="/members/new"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-brand-700 sm:w-auto"
-              >
-                + Add member
-              </Link>
+              {canManageMembers && (
+                <Link
+                  href="/members/new"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white shadow-soft transition hover:bg-brand-700 sm:w-auto"
+                >
+                  + Add member
+                </Link>
+              )}
             </div>
           </div>
 

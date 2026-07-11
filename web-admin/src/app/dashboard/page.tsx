@@ -107,6 +107,10 @@ export default function DashboardPage() {
     useState<AttendanceReport | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const canManageMembers =
+    user?.roles.includes('ADMIN') ||
+    user?.roles.includes('SUPER_ADMIN');
+
   useEffect(() => {
     Promise.all([
       apiFetch<Member[]>('/members'),
@@ -175,12 +179,14 @@ export default function DashboardPage() {
               </p>
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-                <Link
-                  href="/members/new"
-                  className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
-                >
-                  + Add member
-                </Link>
+                {canManageMembers && (
+                  <Link
+                    href="/members/new"
+                    className="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:bg-brand-50"
+                  >
+                    + Add member
+                  </Link>
+                )}
 
                 <Link
                   href="/attendance"
@@ -356,13 +362,15 @@ export default function DashboardPage() {
               </p>
 
               <div className="mt-4 grid gap-2">
-                <Link
-                  href="/members/new"
-                  className="flex items-center justify-between rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
-                >
-                  <span>+ Add new member</span>
-                  <span aria-hidden="true">→</span>
-                </Link>
+                {canManageMembers && (
+                  <Link
+                    href="/members/new"
+                    className="flex items-center justify-between rounded-xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+                  >
+                    <span>+ Add new member</span>
+                    <span aria-hidden="true">→</span>
+                  </Link>
+                )}
 
                 <Link
                   href="/members"

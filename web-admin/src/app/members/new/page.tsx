@@ -6,7 +6,7 @@ import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Protected } from '../../../components/Protected';
 import { Shell } from '../../../components/layout/Shell';
-import { apiFetch } from '../../../lib/apiClient';
+import { apiFetch, ApiError } from '../../../lib/apiClient';
 
 function FieldLabel({
   children,
@@ -106,10 +106,16 @@ export default function AddMemberPage() {
         body: JSON.stringify(payload),
       });
 
-      router.push('/members');
-    } catch (err) {
-      console.error('Failed to create member:', err);
-      alert('Failed to create member');
+      router.replace('/members');
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to create member:', error);
+
+      alert(
+        error instanceof ApiError
+          ? error.message
+          : 'Failed to create member',
+      );
     } finally {
       setSaving(false);
     }

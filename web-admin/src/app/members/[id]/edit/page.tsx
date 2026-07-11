@@ -6,7 +6,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Protected } from '../../../../components/Protected';
 import { Shell } from '../../../../components/layout/Shell';
-import { apiFetch } from '../../../../lib/apiClient';
+import { apiFetch, ApiError } from '../../../../lib/apiClient';
 
 type MemberDetail = {
   _id: string;
@@ -179,10 +179,16 @@ export default function EditMemberPage() {
         body: JSON.stringify(payload),
       });
 
-      router.push(`/members/${memberId}`);
-    } catch (err) {
-      console.error('Failed to update member:', err);
-      alert('Failed to update member');
+      router.replace(`/members/${memberId}`);
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to update member:', error);
+
+      alert(
+        error instanceof ApiError
+          ? error.message
+          : 'Failed to update member',
+      );
     } finally {
       setSaving(false);
     }

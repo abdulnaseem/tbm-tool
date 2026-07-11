@@ -1,3 +1,4 @@
+// web-admin/src/components/layout/Shell.tsx
 'use client';
 
 import { ReactNode, useState } from 'react';

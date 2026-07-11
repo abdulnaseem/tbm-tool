@@ -3,43 +3,45 @@
 
 import {
   createContext,
+  ReactNode,
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
-import { API_BASE } from '../lib/config';
 
-type User = {
-  id: string;
-  email: string;
-  roles: string[];
-};
+import { apiFetch } from '../lib/apiClient';
+import type {
+  AuthUser,
+  LoginResponse,
+  UserRole,
+} from '../types/auth';
 
 type AuthContextType = {
-  user: User | null;
+  user: AuthUser | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<boolean>;
+  isAuthenticated: boolean;
+  hasRole: (...roles: UserRole[]) => boolean;
+  login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchMe = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/auth/me`, {
-        credentials: 'include',
-      });
-
-      if (!res.ok) throw new Error();
-
-      const data = await res.json();
-      setUser(data);
+      const authenticatedUser = await apiFetch<AuthUser>('/auth/me');
+      setUser(authenticatedUser);
     } catch {
       setUser(null);
     } finally {
@@ -48,43 +50,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    fetchMe();
+    void fetchMe();
   }, [fetchMe]);
 
-  async function login(email: string, password: string) {
-    const res = await fetch(`${API_BASE}/auth/login/staff`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+  const login = useCallback(
+    async (email: string, password: string): Promise<void> => {
+      setLoading(true);
 
-    if (!res.ok) return false;
+      try {
+        const result = await apiFetch<LoginResponse>(
+          '/auth/login/staff',
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              email: email.trim().toLowerCase(),
+              password,
+            }),
+          },
+          false,
+        );
 
-    await fetchMe();
-    return true;
-  }
+        setUser(result.user);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
-  async function logout() {
-    await fetch(`${API_BASE}/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      await apiFetch<{ ok: true }>(
+        '/auth/logout',
+        {
+          method: 'POST',
+        },
+        false,
+      );
+    } finally {
+      setUser(null);
+    }
+  }, []);
 
-    setUser(null);
-  }
+  const hasRole = useCallback(
+    (...roles: UserRole[]) =>
+      roles.some((role) => user?.roles.includes(role)),
+    [user],
+  );
+
+  const value = useMemo<AuthContextType>(
+    () => ({
+      user,
+      loading,
+      isAuthenticated: Boolean(user),
+      hasRole,
+      login,
+      logout,
+      refresh: fetchMe,
+    }),
+    [user, loading, hasRole, login, logout, fetchMe],
+  );
 
   return (
-    <AuthContext.Provider
-      value={{ user, loading, login, logout, refresh: fetchMe }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
 }
 
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error(
+      'useAuth must be used within an AuthProvider',
+    );
+  }
+
+  return context;
 }

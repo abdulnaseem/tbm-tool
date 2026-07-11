@@ -1,46 +1,61 @@
+// web-admin/src/components/Protected.tsx
 'use client';
 
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { useAuth } from '../context/AuthContext';
+import type { UserRole } from '../types/auth';
+
+type ProtectedProps = {
+  children: ReactNode;
+  roles?: UserRole[];
+};
 
 export function Protected({
   children,
-  roles,
-}: {
-  children: ReactNode;
-  roles?: string[];
-}) {
+  roles = [],
+}: ProtectedProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (loading) return;
+  const hasRequiredRole =
+    roles.length === 0 ||
+    roles.some((role) => user?.roles.includes(role));
 
-    // Not logged in
+  useEffect(() => {
+    if (loading) {
+      return;
+    }
+
     if (!user) {
       router.replace('/login');
       return;
     }
 
-    // Role protected route
-    if (roles && roles.length > 0) {
-      const hasRole = roles.some((r) => user.roles?.includes(r));
-      if (!hasRole) {
-        router.replace('/dashboard');
-      }
+    if (!hasRequiredRole) {
+      router.replace('/dashboard');
     }
-  }, [user, loading, roles, router]);
+  }, [hasRequiredRole, loading, router, user]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
-      </div>
-    );
+    return <FullPageLoader />;
   }
 
-  if (!user) return null;
+  if (!user || !hasRequiredRole) {
+    return <FullPageLoader />;
+  }
 
   return <>{children}</>;
+}
+
+function FullPageLoader() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-50">
+      <div
+        aria-label="Loading"
+        className="h-10 w-10 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"
+      />
+    </div>
+  );
 }

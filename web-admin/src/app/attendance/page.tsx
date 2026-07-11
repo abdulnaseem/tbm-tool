@@ -1,9 +1,11 @@
+// web-admin/src/app/attendance/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { Protected } from '../../components/Protected';
 import { Shell } from '../../components/layout/Shell';
 import { apiFetch } from '../../lib/apiClient';
+import { useAuth } from '../../context/AuthContext';
 
 type Session = 'CUBS' | 'TIGERS';
 type Status = 'PRESENT' | 'ABSENT';
@@ -57,6 +59,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
+  const { user } = useAuth();
+
   async function loadRegister(selectedSession = session) {
     setLoading(true);
 
@@ -75,7 +79,9 @@ export default function AttendancePage() {
   }
 
   useEffect(() => {
-    loadRegister(session);
+    void loadRegister(session);
+    // loadRegister intentionally reloads when the selected session changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
   async function markAttendance(memberId: string, status: Status) {
@@ -93,7 +99,7 @@ export default function AttendancePage() {
           memberId,
           session,
           status,
-          markedBy: 'ADMIN',
+          markedBy: user?.email,
         }),
       });
 
