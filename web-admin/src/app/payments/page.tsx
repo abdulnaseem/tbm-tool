@@ -29,6 +29,7 @@ import type {
   PaymentReportPeriod,
   PaymentStatisticsResponse,
 } from '../../types/payments';
+import { PaymentCharts } from '../../components/payments/PaymentCharts';
 
 const PERIOD_OPTIONS: Array<{
   value: PaymentReportPeriod;
@@ -555,6 +556,10 @@ export default function PaymentsPage() {
                   />
                 </div>
               </section>
+
+              {statistics && (
+                <PaymentCharts statistics={statistics} />
+              )}
 
               <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
