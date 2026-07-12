@@ -9,7 +9,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
 
-type IconName = 'dashboard' | 'members' | 'attendance' | 'users';
+type IconName =
+  | 'dashboard'
+  | 'members'
+  | 'attendance'
+  | 'payments'
+  | 'users';
 
 type SidebarProps = {
   collapsed: boolean;
@@ -38,6 +43,12 @@ const navItems: NavItem[] = [
     href: '/attendance',
     label: 'Attendance',
     icon: 'attendance',
+  },
+  {
+    href: '/payments',
+    label: 'Payments',
+    icon: 'payments',
+    roles: ['ADMIN', 'SUPER_ADMIN'],
   },
   {
     href: '/users',
@@ -76,6 +87,22 @@ function Icon({ name }: { name: IconName }) {
       >
         <path
           d="M16 11a4 4 0 1 0-3.46-6A5.5 5.5 0 0 1 15 9.5c0 .52-.07 1.02-.21 1.5H16Zm-6.5 0a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm6.5 2c-1.21 0-2.33.35-3.28.94A7.02 7.02 0 0 1 16.5 20H21v-2a5 5 0 0 0-5-5Zm-6.5 0A5.5 5.5 0 0 0 4 18.5V20h11v-1.5A5.5 5.5 0 0 0 9.5 13Z"
+          fill="currentColor"
+        />
+      </svg>
+    );
+  }
+
+  if (name === 'payments') {
+    return (
+      <svg
+        className={className}
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
+        <path
+          d="M3 6.5A2.5 2.5 0 0 1 5.5 4h13A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 17.5v-11ZM5 9h14V7a1 1 0 0 0-1-1H6a1 1 0 0 0-1 1v2Zm0 2v6a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-6H5Zm2 3h4v2H7v-2Z"
           fill="currentColor"
         />
       </svg>
