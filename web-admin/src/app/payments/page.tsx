@@ -500,7 +500,7 @@ export default function PaymentsPage() {
                   />
 
                   <SummaryCard
-                    title="Active memberships"
+                    title="Paid members"
                     value={String(
                       statistics?.summary.activeMemberships ?? 0,
                     )}
