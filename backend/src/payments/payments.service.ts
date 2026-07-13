@@ -413,7 +413,7 @@ export class PaymentsService {
       .exec();
 
     const membershipSummary =
-      await this.getMembershipSummary();
+      await this.getMembershipSummary(range);
 
     return {
       range: {
@@ -710,18 +710,16 @@ export class PaymentsService {
     return pipeline;
   }
 
-  private async getMembershipSummary() {
-    const now = new Date();
-
+  private async getMembershipSummary(range: DateRange) {
     const [activeMemberIds, totalMembers] = await Promise.all([
       this.paymentModel.distinct('memberId', {
         status: PaymentStatus.PAID,
-        periodStart: { $lte: now },
-        periodEnd: { $gte: now },
+        periodStart: { $lte: range.from },
+        periodEnd: { $gte: range.to },
       }),
       this.memberModel.countDocuments(),
     ]);
-
+  
     return {
       activeMemberships: activeMemberIds.length,
       outstandingMembers: Math.max(
