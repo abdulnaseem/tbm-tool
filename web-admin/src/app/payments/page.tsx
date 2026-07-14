@@ -17,8 +17,6 @@ import {
   Loader2,
   ReceiptText,
   RefreshCw,
-  Users,
-  WalletCards,
 } from 'lucide-react';
 
 import { Protected } from '../../components/Protected';
@@ -28,8 +26,10 @@ import type {
   PaymentMethod,
   PaymentReportPeriod,
   PaymentStatisticsResponse,
+  PaymentListResponse,
 } from '../../types/payments';
 import { PaymentCharts } from '../../components/payments/PaymentCharts';
+import { PaidPaymentsTable } from '../../components/payments/PaidPaymentsTable';
 
 const PERIOD_OPTIONS: Array<{
   value: PaymentReportPeriod;
@@ -143,22 +143,36 @@ export default function PaymentsPage() {
   const [statistics, setStatistics] =
     useState<PaymentStatisticsResponse | null>(null);
 
+  const [paymentList, setPaymentList] =
+    useState<PaymentListResponse | null>(null);
+  
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentsLoading, setPaymentsLoading] =
+    useState(true);
+  
+  const [paymentsError, setPaymentsError] =
+    useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const buildQuery = useCallback(() => {
+  const buildBaseQuery = useCallback(() => {
     const params = new URLSearchParams({
       period,
     });
-
+  
     if (period === 'CUSTOM') {
       params.set('from', appliedCustomFrom);
       params.set('to', appliedCustomTo);
     }
-
-    return params.toString();
-  }, [appliedCustomFrom, appliedCustomTo, period]);
+  
+    return params;
+  }, [
+    appliedCustomFrom,
+    appliedCustomTo,
+    period,
+  ]);
 
   const loadStatistics = useCallback(
     async (showRefreshState = false) => {
@@ -178,7 +192,7 @@ export default function PaymentsPage() {
       setError(null);
 
       try {
-        const query = buildQuery();
+        const query = buildBaseQuery().toString();
 
         const data =
           await apiFetch<PaymentStatisticsResponse>(
@@ -201,18 +215,75 @@ export default function PaymentsPage() {
     [
       appliedCustomFrom,
       appliedCustomTo,
-      buildQuery,
+      buildBaseQuery,
       period,
     ],
   );
+
+  const loadPayments = useCallback(async () => {
+    if (
+      period === 'CUSTOM' &&
+      (!appliedCustomFrom || !appliedCustomTo)
+    ) {
+      return;
+    }
+  
+    setPaymentsLoading(true);
+    setPaymentsError(null);
+  
+    try {
+      const params = buildBaseQuery();
+  
+      params.set('status', 'PAID');
+      params.set('page', String(paymentPage));
+      params.set('limit', '10');
+  
+      const data = await apiFetch<PaymentListResponse>(
+        `/payments?${params.toString()}`,
+      );
+  
+      setPaymentList(data);
+  
+      // If records were removed and the current page no longer
+      // exists, return to the final available page.
+      if (
+        data.pagination.totalPages > 0 &&
+        paymentPage > data.pagination.totalPages
+      ) {
+        setPaymentPage(data.pagination.totalPages);
+      }
+    } catch (requestError) {
+      setPaymentList(null);
+  
+      setPaymentsError(
+        getErrorMessage(
+          requestError,
+          'Failed to load paid member payments',
+        ),
+      );
+    } finally {
+      setPaymentsLoading(false);
+    }
+  }, [
+    appliedCustomFrom,
+    appliedCustomTo,
+    buildBaseQuery,
+    paymentPage,
+    period,
+  ]);
 
   useEffect(() => {
     void loadStatistics();
   }, [loadStatistics]);
 
+  useEffect(() => {
+    void loadPayments();
+  }, [loadPayments]);
+
   function handlePeriodChange(
     selectedPeriod: PaymentReportPeriod,
   ) {
+    setPaymentPage(1);
     setPeriod(selectedPeriod);
   }
 
@@ -234,6 +305,7 @@ export default function PaymentsPage() {
       return;
     }
 
+    setPaymentPage(1);
     setAppliedCustomFrom(customFrom);
     setAppliedCustomTo(customTo);
   }
@@ -270,6 +342,13 @@ export default function PaymentsPage() {
     };
   }, [statistics]);
 
+  async function refreshAllData() {
+    await Promise.all([
+      loadStatistics(true),
+      loadPayments(),
+    ]);
+  }
+
   return (
     <Protected roles={['ADMIN', 'SUPER_ADMIN']}>
       <Shell>
@@ -292,8 +371,8 @@ export default function PaymentsPage() {
 
             <button
               type="button"
-              onClick={() => void loadStatistics(true)}
-              disabled={loading || refreshing}
+              onClick={() => void refreshAllData()}
+              disabled={loading || refreshing || paymentsLoading}
               className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-soft transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <RefreshCw
@@ -460,7 +539,7 @@ export default function PaymentsPage() {
                   </p>
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2">
                   <SummaryCard
                     title="Total revenue"
                     value={formatCurrency(
@@ -486,27 +565,6 @@ export default function PaymentsPage() {
                     icon={<ReceiptText className="h-5 w-5" />}
                   />
 
-                  <SummaryCard
-                    title="Average payment"
-                    value={formatCurrency(
-                      statistics?.summary.averagePayment ?? 0,
-                    )}
-                    description="Average of paid transactions"
-                    icon={<WalletCards className="h-5 w-5" />}
-                    variant="blue"
-                  />
-
-                  <SummaryCard
-                    title="Paid members"
-                    value={String(
-                      statistics?.summary.activeMemberships ?? 0,
-                    )}
-                    description={`${
-                      statistics?.summary.outstandingMembers ?? 0
-                    } outstanding`}
-                    icon={<Users className="h-5 w-5" />}
-                    variant="purple"
-                  />
                 </div>
               </section>
 
@@ -553,6 +611,41 @@ export default function PaymentsPage() {
                   />
                 </div>
               </section>
+
+              {paymentsError && (
+                <div
+                    role="alert"
+                    className="flex flex-col gap-3 rounded-2xl border border-red-100 bg-red-50 p-4 text-sm text-red-700 sm:flex-row sm:items-center sm:justify-between"
+                >
+                    <span>{paymentsError}</span>
+
+                    <button
+                    type="button"
+                    onClick={() => void loadPayments()}
+                    className="rounded-xl border border-red-200 bg-white px-3 py-2 text-xs font-semibold text-red-700"
+                    >
+                    Try again
+                    </button>
+                </div>
+              )}
+
+              <PaidPaymentsTable
+                payments={paymentList?.items ?? []}
+                loading={paymentsLoading}
+                page={paymentList?.pagination.page ?? paymentPage}
+                total={paymentList?.pagination.total ?? 0}
+                totalPages={paymentList?.pagination.totalPages ?? 0}
+                onPageChange={(nextPage) => {
+                    setPaymentPage(nextPage);
+
+                    document
+                    .getElementById('paid-payments-heading')
+                    ?.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start',
+                    });
+                }}
+              />
 
               {statistics && (
                 <PaymentCharts statistics={statistics} />

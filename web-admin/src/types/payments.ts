@@ -77,3 +77,35 @@ export type PaymentStatisticsResponse = {
   timeline: PaymentTimelineItem[];
   recentPayments: RecentPayment[];
 };
+
+export type PaymentListItem = {
+    _id: string;
+    memberId: string;
+    childName: string;
+    guardianName?: string;
+    session?: PaymentSession;
+    amount: number;
+    currency: string;
+    paymentMethod: PaymentMethod;
+    status: PaymentStatus;
+    periodStart: string;
+    periodEnd: string;
+    recordedBy?: string;
+    createdAt: string;
+    updatedAt?: string;
+  };
+  
+  export type PaymentListResponse = {
+    range: {
+      label: string;
+      from: string;
+      to: string;
+    };
+    items: PaymentListItem[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
