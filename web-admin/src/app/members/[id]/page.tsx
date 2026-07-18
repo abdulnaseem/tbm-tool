@@ -211,7 +211,6 @@ export default function MemberDetailPage() {
       periodStart: String(form.get('periodStart') || defaultStart),
       periodEnd: String(form.get('periodEnd') || defaultEnd),
       notes: String(form.get('notes') || '').trim(),
-      recordedBy: user?.email,
     };
 
     try {
@@ -222,6 +221,19 @@ export default function MemberDetailPage() {
 
       setPayments((currentPayments) => [newPayment, ...currentPayments]);
       formElement.reset();
+
+      const startInput =
+        formElement.elements.namedItem(
+          'periodStart',
+        ) as HTMLInputElement | null;
+
+      const endInput =
+        formElement.elements.namedItem(
+          'periodEnd',
+        ) as HTMLInputElement | null;
+
+      if (startInput) startInput.value = defaultStart;
+      if (endInput) endInput.value = defaultEnd;
     } catch (err) {
       console.error('Failed to add payment:', err);
       alert('Failed to add payment');
