@@ -198,8 +198,8 @@ export default function SignupWizard() {
 
   if (success) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center px-4">
-        <div className="max-w-xl w-full rounded-3xl bg-white p-8 shadow-xl border border-slate-100 text-center">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+        <div className="w-full max-w-xl rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -218,27 +218,38 @@ export default function SignupWizard() {
           </div>
   
           <h1 className="text-2xl font-bold text-slate-900">
-            Registration submitted successfully
+            Registration Submitted Successfully
           </h1>
   
-          <p className="mt-4 text-slate-600 leading-relaxed">
-            Thank you for registering with <strong>Brawlers Boxing</strong>.
+          <p className="mt-4 leading-relaxed text-slate-600">
+            Thank you for registering for <strong>The Butterfly Movement</strong>. Your
+            registration has been received successfully.
           </p>
   
-          <p className="mt-3 text-slate-600 leading-relaxed">
-            Your registration form has been received and a confirmation email has
-            been sent to the email address provided.
+          <p className="mt-3 leading-relaxed text-slate-600">
+            A confirmation email has been sent to the email address you provided.
+            If you don't receive it within a few minutes, please check your
+            <strong> Spam</strong> or <strong>Junk</strong> folder.
           </p>
   
-          <p className="mt-3 text-slate-600 leading-relaxed">
-            If you do not receive the email within a few minutes, please check
-            your <strong>spam</strong> or <strong>junk</strong> folder.
+          <p className="mt-3 leading-relaxed text-slate-600">
+            You're welcome to attend our next boxing session this coming
+            <strong> Saturday at the Osmani Centre</strong>. Our coaching team
+            will be there to welcome you and answer any questions you may have.
           </p>
   
-          <p className="mt-3 text-slate-600 leading-relaxed">
-            A member of <strong>The Butterfly Movement</strong> team will review
-            your registration and contact you shortly regarding your place on the
-            programme.
+          <p className="mt-3 leading-relaxed text-slate-600">
+            If you have any questions before attending, please contact us on
+            <a
+              href="tel:07715316840"
+              className="ml-1 font-semibold text-brand-600 hover:underline"
+            >
+              07715&nbsp;316840
+            </a>.
+          </p>
+  
+          <p className="mt-5 font-medium text-slate-900">
+            We look forward to welcoming you to The Butterfly Movement!
           </p>
         </div>
       </main>
