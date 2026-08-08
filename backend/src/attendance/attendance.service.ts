@@ -1,37 +1,58 @@
 // backend/src/attendance/attendance.service.ts
-import { BadRequestException, Injectable } from '@nestjs/common';
+
+import {
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
+
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import {
   Attendance,
   AttendanceDocument,
   AttendanceSession,
   AttendanceStatus,
 } from './schemas/attendance.schema';
+
 import {
   MemberProfile,
   MemberProfileDocument,
 } from '../members/schemas/member-profile.schema';
 
+import { ProgrammeId } from '../common/enums/programme-id.enum';
+
 @Injectable()
 export class AttendanceService {
   constructor(
     @InjectModel(Attendance.name)
-    private attendanceModel: Model<AttendanceDocument>,
+    private readonly attendanceModel: Model<AttendanceDocument>,
 
     @InjectModel(MemberProfile.name)
-    private memberModel: Model<MemberProfileDocument>,
+    private readonly memberModel: Model<MemberProfileDocument>,
   ) {}
 
   private getTodayDateString() {
     return new Date().toISOString().split('T')[0];
   }
 
-  private getSessionTimes(session: AttendanceSession) {
+  private getSessionTimes(
+    session: AttendanceSession,
+    programmeId: ProgrammeId,
+  ) {
+    if (programmeId === ProgrammeId.THE_GRAPPLE_HUB) {
+      return {
+        startHour: 10,
+        startMinute: 0,
+        endHour: 12,
+        endMinute: 0,
+      };
+    }
+
     if (session === 'CUBS') {
       return {
         startHour: 12,
-        startMinute: 30,
+        startMinute: 45,
         endHour: 13,
         endMinute: 45,
       };
@@ -40,33 +61,38 @@ export class AttendanceService {
     return {
       startHour: 13,
       startMinute: 45,
-      endHour: 15,
-      endMinute: 0,
+      endHour: 14,
+      endMinute: 45,
     };
   }
 
-  isRegisterOpen(session: AttendanceSession) {
+  isRegisterOpen(
+    session: AttendanceSession,
+    programmeId: ProgrammeId,
+  ) {
     const now = new Date();
 
-    const isSaturday = now.getDay() === 6;
-
-    if (!isSaturday) {
+    if (now.getDay() !== 6) {
       return {
         open: false,
         reason: 'Register only opens on Saturdays.',
       };
     }
 
-    const times = this.getSessionTimes(session);
+    const times = this.getSessionTimes(session, programmeId);
 
-    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    const minutesNow =
+      now.getHours() * 60 + now.getMinutes();
 
-    const startMinutes = times.startHour * 60 + times.startMinute;
-    const endMinutes = times.endHour * 60 + times.endMinute;
+    const startMinutes =
+      times.startHour * 60 + times.startMinute;
 
-    const registerOpenMinutes = startMinutes - 10;
+    const endMinutes =
+      times.endHour * 60 + times.endMinute;
 
-    const open = minutesNow >= registerOpenMinutes && minutesNow <= endMinutes;
+    const open =
+      minutesNow >= startMinutes - 10 &&
+      minutesNow <= endMinutes;
 
     return {
       open,
@@ -76,28 +102,49 @@ export class AttendanceService {
     };
   }
 
-  async getRegister(session: AttendanceSession) {
+  async getRegister(
+    session: AttendanceSession,
+    programmeId: ProgrammeId,
+  ) {
     const date = this.getTodayDateString();
-    const register = this.isRegisterOpen(session);
+    const register = this.isRegisterOpen(
+      session,
+      programmeId,
+    );
 
     const members = await this.memberModel
-      .find({ session })
-      .sort({ childFirstName: 1, childLastName: 1 })
+      .find({
+        gymId: programmeId,
+        session,
+      })
+      .sort({
+        childFirstName: 1,
+        childLastName: 1,
+      })
       .lean();
 
     const attendance = await this.attendanceModel
-      .find({ session, date })
+      .find({
+        gymId: programmeId,
+        session,
+        date,
+      })
       .lean();
 
     const attendanceByMemberId = new Map(
-      attendance.map((record) => [record.memberId, record]),
+      attendance.map((record) => [
+        record.memberId,
+        record,
+      ]),
     );
 
     return {
+      programmeId,
       session,
       date,
       registerOpen: register.open,
       message: register.reason,
+
       members: members.map((member: any) => {
         const childName = [
           member.childFirstName,
@@ -107,35 +154,48 @@ export class AttendanceService {
           .filter(Boolean)
           .join(' ');
 
-        const attendanceRecord = attendanceByMemberId.get(String(member._id));
+        const record = attendanceByMemberId.get(
+          String(member._id),
+        );
 
         return {
           memberId: String(member._id),
           childName,
           session: member.session,
-          status: attendanceRecord?.status || null,
-          markedAt: attendanceRecord?.markedAt || null,
+          status: record?.status || null,
+          markedAt: record?.markedAt || null,
         };
       }),
     };
   }
 
   async markAttendance(data: {
+    programmeId: ProgrammeId;
     memberId: string;
     session: AttendanceSession;
     status: AttendanceStatus;
     markedBy?: string;
   }) {
-    const register = this.isRegisterOpen(data.session);
+    const register = this.isRegisterOpen(
+      data.session,
+      data.programmeId,
+    );
 
     if (!register.open) {
       throw new BadRequestException(register.reason);
     }
 
-    const member = await this.memberModel.findById(data.memberId).lean();
+    const member = await this.memberModel
+      .findOne({
+        _id: data.memberId,
+        gymId: data.programmeId,
+      })
+      .lean();
 
     if (!member) {
-      throw new BadRequestException('Member not found.');
+      throw new BadRequestException(
+        'Member not found in the selected programme.',
+      );
     }
 
     const childName = [
@@ -148,14 +208,16 @@ export class AttendanceService {
 
     const date = this.getTodayDateString();
 
-    const attendance = await this.attendanceModel
+    return this.attendanceModel
       .findOneAndUpdate(
         {
+          gymId: data.programmeId,
           memberId: data.memberId,
           session: data.session,
           date,
         },
         {
+          gymId: data.programmeId,
           memberId: data.memberId,
           childName,
           session: data.session,
@@ -171,38 +233,59 @@ export class AttendanceService {
         },
       )
       .lean();
-
-    return attendance;
   }
 
-  async findByMember(memberId: string) {
+  async findByMember(
+    memberId: string,
+    programmeId: ProgrammeId,
+  ) {
     return this.attendanceModel
-      .find({ memberId })
+      .find({
+        gymId: programmeId,
+        memberId,
+      })
       .sort({ date: -1 })
       .lean();
   }
 
-  async getReport() {
-    const records = await this.attendanceModel.find().lean();
+  async getReport(programmeId: ProgrammeId) {
+    const records = await this.attendanceModel
+      .find({
+        gymId: programmeId,
+      })
+      .lean();
 
     const totalMarked = records.length;
-    const totalPresent = records.filter((r) => r.status === 'PRESENT').length;
-    const totalAbsent = records.filter((r) => r.status === 'ABSENT').length;
+
+    const totalPresent = records.filter(
+      (record) => record.status === 'PRESENT',
+    ).length;
+
+    const totalAbsent = records.filter(
+      (record) => record.status === 'ABSENT',
+    ).length;
 
     const attendanceRate =
-      totalMarked > 0 ? Math.round((totalPresent / totalMarked) * 100) : 0;
+      totalMarked > 0
+        ? Math.round((totalPresent / totalMarked) * 100)
+        : 0;
 
-    const cubsRecords = records.filter((r) => r.session === 'CUBS');
-    const tigersRecords = records.filter((r) => r.session === 'TIGERS');
+    const getRate = (session: AttendanceSession) => {
+      const sessionRecords = records.filter(
+        (record) => record.session === session,
+      );
 
-    const getRate = (sessionRecords: any[]) => {
-      if (sessionRecords.length === 0) return 0;
+      if (!sessionRecords.length) {
+        return 0;
+      }
 
       const present = sessionRecords.filter(
         (record) => record.status === 'PRESENT',
       ).length;
 
-      return Math.round((present / sessionRecords.length) * 100);
+      return Math.round(
+        (present / sessionRecords.length) * 100,
+      );
     };
 
     const byMember = new Map<
@@ -231,13 +314,17 @@ export class AttendanceService {
 
       existing.total += 1;
 
-      if (record.status === 'PRESENT') existing.present += 1;
-      if (record.status === 'ABSENT') existing.absent += 1;
+      if (record.status === 'PRESENT') {
+        existing.present += 1;
+      }
 
-      existing.rate =
-        existing.total > 0
-          ? Math.round((existing.present / existing.total) * 100)
-          : 0;
+      if (record.status === 'ABSENT') {
+        existing.absent += 1;
+      }
+
+      existing.rate = Math.round(
+        (existing.present / existing.total) * 100,
+      );
 
       byMember.set(record.memberId, existing);
     }
@@ -245,38 +332,54 @@ export class AttendanceService {
     const members = Array.from(byMember.values());
 
     return {
+      programmeId,
       totalMarked,
       totalPresent,
       totalAbsent,
       attendanceRate,
-      cubsAttendanceRate: getRate(cubsRecords),
-      tigersAttendanceRate: getRate(tigersRecords),
+
+      cubsAttendanceRate: getRate('CUBS'),
+      tigersAttendanceRate: getRate('TIGERS'),
+      juniorsAttendanceRate: getRate('JUNIORS'),
+      adultsAttendanceRate: getRate('ADULTS'),
+
       mostRegular: members
         .filter((member) => member.total >= 2)
         .sort((a, b) => b.rate - a.rate)
         .slice(0, 5),
+
       lowAttendance: members
-        .filter((member) => member.total >= 2 && member.rate < 60)
+        .filter(
+          (member) =>
+            member.total >= 2 &&
+            member.rate < 60,
+        )
         .sort((a, b) => a.rate - b.rate)
         .slice(0, 5),
     };
   }
 
   async backfillSessionAttendance(data: {
+    programmeId: ProgrammeId;
     session: AttendanceSession;
-    date: string; // YYYY-MM-DD
+    date: string;
     presentNames: string[];
-    markedAt: string; // ISO string
+    markedAt: string;
     markedBy?: string;
   }) {
-    const members = await this.memberModel.find({ session: data.session }).lean();
-  
-    const presentNamesNormalized = data.presentNames.map((name) =>
-      name.trim().toLowerCase(),
+    const members = await this.memberModel
+      .find({
+        gymId: data.programmeId,
+        session: data.session,
+      })
+      .lean();
+
+    const normalisedNames = data.presentNames.map(
+      (name) => name.trim().toLowerCase(),
     );
-  
+
     const results = [];
-  
+
     for (const member of members as any[]) {
       const childName = [
         member.childFirstName,
@@ -286,40 +389,43 @@ export class AttendanceService {
         .filter(Boolean)
         .join(' ')
         .trim();
-  
+
       const existing = await this.attendanceModel.findOne({
+        gymId: data.programmeId,
         memberId: String(member._id),
         session: data.session,
         date: data.date,
       });
-  
-      // Keep existing PRESENT records unchanged
+
       if (existing?.status === 'PRESENT') {
         results.push(existing);
         continue;
       }
-  
-      const isNamedPresent = presentNamesNormalized.some((name) =>
+
+      const isPresent = normalisedNames.some((name) =>
         childName.toLowerCase().includes(name),
       );
-  
+
       const attendance = await this.attendanceModel
         .findOneAndUpdate(
           {
+            gymId: data.programmeId,
             memberId: String(member._id),
             session: data.session,
             date: data.date,
           },
           {
+            gymId: data.programmeId,
             memberId: String(member._id),
             childName,
             session: data.session,
             date: data.date,
-            status: isNamedPresent ? 'PRESENT' : 'ABSENT',
-            markedAt: isNamedPresent
+            status: isPresent ? 'PRESENT' : 'ABSENT',
+            markedAt: isPresent
               ? new Date(data.markedAt)
               : new Date(),
-            markedBy: data.markedBy || 'ADMIN_BACKFILL',
+            markedBy:
+              data.markedBy || 'ADMIN_BACKFILL',
           },
           {
             new: true,
@@ -328,16 +434,16 @@ export class AttendanceService {
           },
         )
         .lean();
-  
+
       results.push(attendance);
     }
-  
+
     return {
       success: true,
+      programmeId: data.programmeId,
       session: data.session,
       date: data.date,
       totalUpdated: results.length,
-      presentNames: data.presentNames,
     };
   }
 }

@@ -7,6 +7,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { Protected } from '../../../../components/Protected';
 import { Shell } from '../../../../components/layout/Shell';
 import { apiFetch, ApiError } from '../../../../lib/apiClient';
+import { useProgramme } from '../../../../context/ProgrammeContext';
+import { withProgramme } from '../../../../lib/programmeApi';
 
 type MemberDetail = {
   _id: string;
@@ -108,6 +110,21 @@ export default function EditMemberPage() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const memberId = params.id;
+  const { programmeId, programme } = useProgramme();
+
+  const isBrawlers = programmeId === 'BRAWLERS_BOXING';
+
+  const sessionOptions = isBrawlers
+    ? [
+        { value: 'CUBS', label: 'Cubs' },
+        { value: 'TIGERS', label: 'Tigers' },
+        { value: 'UNKNOWN', label: 'Unknown' },
+      ]
+    : [
+        { value: 'JUNIORS', label: 'Juniors' },
+        { value: 'ADULTS', label: 'Adults' },
+        { value: 'UNKNOWN', label: 'Unknown' },
+      ];
 
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -116,14 +133,18 @@ export default function EditMemberPage() {
   useEffect(() => {
     if (!memberId) return;
 
-    apiFetch<MemberDetail>(`/members/${memberId}`)
+    setLoading(true);
+
+    apiFetch<MemberDetail>(
+      withProgramme(`/members/${memberId}`, programmeId),
+    )
       .then(setMember)
       .catch((err) => {
         console.error('Failed to fetch member:', err);
         setMember(null);
       })
       .finally(() => setLoading(false));
-  }, [memberId]);
+  }, [memberId, programmeId]);
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -148,7 +169,7 @@ export default function EditMemberPage() {
       childDateOfBirth: form.get('childDateOfBirth'),
 
       session: form.get('session') || 'UNKNOWN',
-      disciplines: ['BOXING'],
+      disciplines: isBrawlers ? ['BOXING'] : ['BJJ'],
       membershipStatus: String(form.get('membershipStatus') || 'ACTIVE'),
 
       allergies: String(form.get('allergies') || '').trim(),
@@ -167,17 +188,20 @@ export default function EditMemberPage() {
       consentData: form.get('consentData') === 'on',
       consentPhotography: form.get('consentPhotography') === 'on',
 
-      totalPrice: Number(form.get('totalPrice') || 100),
+      totalPrice: Number(form.get('totalPrice') || (isBrawlers ? 100 : 0)),
       paymentIntentId:
         String(form.get('paymentIntentId') || '').trim() ||
         'MANUAL_ADMIN_UPDATE',
     };
 
     try {
-      await apiFetch(`/members/${memberId}`, {
+      await apiFetch(
+        withProgramme(`/members/${memberId}`, programmeId),
+        {
         method: 'PATCH',
-        body: JSON.stringify(payload),
-      });
+          body: JSON.stringify(payload),
+        },
+      );
 
       router.replace(`/members/${memberId}`);
       router.refresh();
@@ -211,7 +235,7 @@ export default function EditMemberPage() {
       <Protected roles={['ADMIN', 'SUPER_ADMIN']}>
         <Shell>
           <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm text-slate-500 shadow-soft">
-            Member not found.
+            Member not found in {programme.name}.
           </div>
         </Shell>
       </Protected>
@@ -329,9 +353,11 @@ export default function EditMemberPage() {
                     defaultValue={member.session || 'UNKNOWN'}
                     className={inputClassName}
                   >
-                    <option value="CUBS">Cubs</option>
-                    <option value="TIGERS">Tigers</option>
-                    <option value="UNKNOWN">Unknown</option>
+                    {sessionOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 

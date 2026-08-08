@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import { Protected } from '../../../components/Protected';
 import { Shell } from '../../../components/layout/Shell';
 import { apiFetch, ApiError } from '../../../lib/apiClient';
+import { useProgramme } from '../../../context/ProgrammeContext';
+import { withProgramme } from '../../../lib/programmeApi';
 
 function FieldLabel({
   children,
@@ -56,7 +58,22 @@ function SectionCard({
 
 export default function AddMemberPage() {
   const router = useRouter();
+  const { programmeId, programme } = useProgramme();
   const [saving, setSaving] = useState(false);
+
+  const isBrawlers = programmeId === 'BRAWLERS_BOXING';
+
+  const sessionOptions = isBrawlers
+    ? [
+        { value: 'CUBS', label: 'Cubs' },
+        { value: 'TIGERS', label: 'Tigers' },
+        { value: 'UNKNOWN', label: 'Unknown' },
+      ]
+    : [
+        { value: 'JUNIORS', label: 'Juniors' },
+        { value: 'ADULTS', label: 'Adults' },
+        { value: 'UNKNOWN', label: 'Unknown' },
+      ];
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,7 +97,7 @@ export default function AddMemberPage() {
       childDateOfBirth: form.get('childDateOfBirth'),
 
       session: form.get('session') || 'UNKNOWN',
-      disciplines: ['BOXING'],
+      disciplines: isBrawlers ? ['BOXING'] : ['BJJ'],
 
       allergies: String(form.get('allergies') || '').trim(),
       medicalConditions: String(form.get('medicalConditions') || '').trim(),
@@ -101,7 +118,7 @@ export default function AddMemberPage() {
     };
 
     try {
-      await apiFetch('/members', {
+      await apiFetch(withProgramme('/members', programmeId), {
         method: 'POST',
         body: JSON.stringify(payload),
       });
@@ -138,7 +155,7 @@ export default function AddMemberPage() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Add a new child member, guardian, medical and consent details.
+              Add a new {programme.name} member, guardian, medical and consent details.
             </p>
           </div>
 
@@ -204,12 +221,14 @@ export default function AddMemberPage() {
                   <FieldLabel>Session</FieldLabel>
                   <select
                     name="session"
-                    defaultValue="CUBS"
+                    defaultValue={isBrawlers ? 'CUBS' : 'JUNIORS'}
                     className={inputClassName}
                   >
-                    <option value="CUBS">Cubs</option>
-                    <option value="TIGERS">Tigers</option>
-                    <option value="UNKNOWN">Unknown</option>
+                    {sessionOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

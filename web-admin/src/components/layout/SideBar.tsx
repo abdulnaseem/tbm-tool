@@ -9,6 +9,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import type { UserRole } from '../../types/auth';
 
+import { useProgramme } from '../../context/ProgrammeContext';
+import { PROGRAMMES } from '../../types/programme';
+
 type IconName =
   | 'dashboard'
   | 'members'
@@ -144,9 +147,19 @@ export function Sidebar({
   collapsed,
   onCollapsedChange,
 }: SidebarProps) {
+
   const pathname = usePathname();
   const { user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const {
+    programmeId,
+    programme,
+    setProgrammeId,
+  } = useProgramme();
+  
+  const [programmeMenuOpen, setProgrammeMenuOpen] =
+    useState(false);
 
   const initials = useMemo(() => {
     const email = user?.email || 'User';
@@ -222,28 +235,102 @@ export function Sidebar({
         </div>
 
         {!collapsed && (
-          <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-3">
-            <div className="flex items-center gap-3">
-              <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white">
-                <Image
-                  src="/logo2.jpeg"
-                  alt="Brawlers Boxing logo"
-                  fill
-                  sizes="36px"
-                  className="object-contain"
+          <div className="relative mt-4">
+            <button
+              type="button"
+              onClick={() =>
+                setProgrammeMenuOpen((current) => !current)
+              }
+              aria-expanded={programmeMenuOpen}
+              className="flex w-full items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-3 text-left transition hover:border-slate-200 hover:bg-slate-100"
+            >
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-white">
+                  <Image
+                    src={programme.logo}
+                    alt={`${programme.name} logo`}
+                    fill
+                    sizes="40px"
+                    className="object-contain"
+                  />
+                </div>
+
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-slate-900">
+                    {programme.name}
+                  </div>
+
+                  <div className="truncate text-xs text-slate-500">
+                    {programme.description}
+                  </div>
+                </div>
+              </div>
+
+              <svg
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className={`h-4 w-4 shrink-0 text-slate-400 transition ${
+                  programmeMenuOpen ? 'rotate-180' : ''
+                }`}
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
+                  clipRule="evenodd"
                 />
-              </div>
+              </svg>
+            </button>
 
-              <div className="min-w-0">
-                <div className="whitespace-nowrap text-sm font-semibold text-slate-900">
-                  Brawlers Boxing
-                </div>
+            {programmeMenuOpen && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+                {PROGRAMMES.map((item) => {
+                  const selected = item.id === programmeId;
 
-                <div className="whitespace-nowrap text-xs text-slate-500">
-                  Boxing programme
-                </div>
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setProgrammeId(item.id);
+                        setProgrammeMenuOpen(false);
+                      }}
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition ${
+                        selected
+                          ? 'bg-brand-50'
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-full bg-white">
+                        <Image
+                          src={item.logo}
+                          alt=""
+                          fill
+                          sizes="36px"
+                          className="object-contain"
+                        />
+                      </div>
+
+                      <div className="min-w-0">
+                        <div
+                          className={`truncate text-sm font-semibold ${
+                            selected
+                              ? 'text-brand-700'
+                              : 'text-slate-900'
+                          }`}
+                        >
+                          {item.name}
+                        </div>
+
+                        <div className="truncate text-xs text-slate-500">
+                          {item.description}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>

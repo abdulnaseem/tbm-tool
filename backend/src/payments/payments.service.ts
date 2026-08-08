@@ -31,6 +31,7 @@ import {
   PaymentReportPeriod,
   PaymentReportQueryDto,
 } from './dto/payment-report-query.dto';
+import { ProgrammeId } from '../common/enums/programme-id.enum';
 
 type DateRange = {
   label: string;
@@ -79,8 +80,14 @@ export class PaymentsService {
   async create(
     data: CreatePaymentDto,
     recordedBy: string,
+    programmeId: ProgrammeId,
   ) {
-    const member = await this.memberModel.findById(data.memberId).lean();
+    const member = await this.memberModel
+      .findOne({
+        _id: data.memberId,
+        gymId: programmeId,
+      })
+      .lean();
 
     if (!member) {
       throw new NotFoundException('Member not found');
@@ -96,6 +103,7 @@ export class PaymentsService {
     }
 
     const payment = await this.paymentModel.create({
+      gymId: programmeId,
       memberId: data.memberId,
       guardianEmail: data.guardianEmail || member.email || '',
       amount: data.amount,
@@ -138,13 +146,30 @@ export class PaymentsService {
     return payment.toObject();
   }
 
-  async findByMember(memberId: string) {
+  async findByMember(
+    memberId: string,
+    programmeId: ProgrammeId,
+  ) {
     if (!Types.ObjectId.isValid(memberId)) {
       throw new BadRequestException('Invalid member ID');
     }
 
+    const memberExists = await this.memberModel.exists({
+      _id: memberId,
+      gymId: programmeId,
+    });
+
+    if (!memberExists) {
+      throw new NotFoundException(
+        'Member not found in the selected programme',
+      );
+    }
+
     return this.paymentModel
-      .find({ memberId })
+      .find({
+        memberId,
+        gymId: programmeId,
+      })
       .sort({ createdAt: -1 })
       .lean();
   }
@@ -413,7 +438,10 @@ export class PaymentsService {
       .exec();
 
     const membershipSummary =
-      await this.getMembershipSummary(range);
+      await this.getMembershipSummary(
+        range,
+        query.programmeId,
+      );
 
     return {
       range: {
@@ -509,7 +537,7 @@ export class PaymentsService {
 
     return {
       buffer,
-      filename: `payments-${range.from
+      filename: `payments-${query.programmeId.toLowerCase()}-${range.from
         .toISOString()
         .slice(0, 10)}-to-${range.to
         .toISOString()
@@ -521,12 +549,16 @@ export class PaymentsService {
     id: string,
     data: UpdatePaymentDto,
     recordedBy: string,
+    programmeId: ProgrammeId,
   ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid payment ID');
     }
 
-    const existingPayment = await this.paymentModel.findById(id);
+    const existingPayment = await this.paymentModel.findOne({
+      _id: id,
+      gymId: programmeId,
+    });
 
     if (!existingPayment) {
       throw new NotFoundException('Payment not found');
@@ -573,13 +605,19 @@ export class PaymentsService {
     return existingPayment.toObject();
   }
 
-  async delete(id: string) {
+  async delete(
+    id: string,
+    programmeId: ProgrammeId,
+  ) {
     if (!Types.ObjectId.isValid(id)) {
       throw new BadRequestException('Invalid payment ID');
     }
 
     const payment = await this.paymentModel
-      .findByIdAndDelete(id)
+      .findOneAndDelete({
+        _id: id,
+        gymId: programmeId,
+      })
       .lean();
 
     if (!payment) {
@@ -589,11 +627,15 @@ export class PaymentsService {
     return { success: true };
   }
 
-  async hasActivePayment(memberId: string) {
+  async hasActivePayment(
+    memberId: string,
+    programmeId: ProgrammeId,
+  ) {
     const now = new Date();
 
     const payment = await this.paymentModel.exists({
       memberId,
+      gymId: programmeId,
       status: PaymentStatus.PAID,
       periodStart: { $lte: now },
       periodEnd: { $gte: now },
@@ -607,6 +649,7 @@ export class PaymentsService {
     range: DateRange,
   ): PipelineStage[] {
     const initialMatch: FilterQuery<PaymentDocument> = {
+      gymId: query.programmeId,
       createdAt: {
         $gte: range.from,
         $lte: range.to,
@@ -710,20 +753,26 @@ export class PaymentsService {
     return pipeline;
   }
 
-  private async getMembershipSummary(range: DateRange) {
+  private async getMembershipSummary(
+    range: DateRange,
+    programmeId: ProgrammeId,
+  ) {
     const requiredPeriodStart = this.startOfUtcDay(range.from);
     const requiredPeriodEnd = this.startOfUtcDay(range.to);
-  
+
     const [paidMemberIds, totalMembers] = await Promise.all([
       this.paymentModel.distinct('memberId', {
+        gymId: programmeId,
         status: PaymentStatus.PAID,
         periodStart: { $lte: requiredPeriodStart },
         periodEnd: { $gte: requiredPeriodEnd },
       }),
-  
-      this.memberModel.countDocuments(),
+
+      this.memberModel.countDocuments({
+        gymId: programmeId,
+      }),
     ]);
-  
+
     return {
       activeMemberships: paidMemberIds.length,
       outstandingMembers: Math.max(
@@ -870,22 +919,51 @@ export class PaymentsService {
 
       case PaymentReportPeriod.THIS_TERM:
       default:
-        return this.getCurrentTermRange();
+        return this.getCurrentTermRange(
+          query.programmeId,
+        );
     }
   }
 
-  private getCurrentTermRange(): DateRange {
-    const termName =
-      this.config.get<string>('CURRENT_TERM_NAME') ??
-      'Summer Term 2026';
+  private getCurrentTermRange(
+    programmeId: ProgrammeId,
+  ): DateRange {
+    const isGrappleHub =
+      programmeId === ProgrammeId.THE_GRAPPLE_HUB;
 
-    const termStart =
-      this.config.get<string>('CURRENT_TERM_START') ??
-      '2026-07-04';
+    const termName = isGrappleHub
+      ? this.config.get<string>(
+          'GRAPPLE_HUB_CURRENT_TERM_NAME',
+        ) ?? 'The Grapple Hub - Current Term'
+      : this.config.get<string>(
+          'BRAWLERS_CURRENT_TERM_NAME',
+        ) ??
+        this.config.get<string>('CURRENT_TERM_NAME') ??
+        'Summer Term 2026';
 
-    const termEnd =
-      this.config.get<string>('CURRENT_TERM_END') ??
-      '2026-09-26';
+    const termStart = isGrappleHub
+      ? this.config.get<string>(
+          'GRAPPLE_HUB_CURRENT_TERM_START',
+        ) ??
+        this.config.get<string>('CURRENT_TERM_START') ??
+        '2026-07-04'
+      : this.config.get<string>(
+          'BRAWLERS_CURRENT_TERM_START',
+        ) ??
+        this.config.get<string>('CURRENT_TERM_START') ??
+        '2026-07-04';
+
+    const termEnd = isGrappleHub
+      ? this.config.get<string>(
+          'GRAPPLE_HUB_CURRENT_TERM_END',
+        ) ??
+        this.config.get<string>('CURRENT_TERM_END') ??
+        '2026-09-26'
+      : this.config.get<string>(
+          'BRAWLERS_CURRENT_TERM_END',
+        ) ??
+        this.config.get<string>('CURRENT_TERM_END') ??
+        '2026-09-26';
 
     const from = this.startOfUtcDay(new Date(termStart));
     const to = this.endOfUtcDay(new Date(termEnd));

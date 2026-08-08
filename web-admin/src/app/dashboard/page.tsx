@@ -6,7 +6,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { Protected } from '../../components/Protected';
 import { Shell } from '../../components/layout/Shell';
 import { useAuth } from '../../context/AuthContext';
+import { useProgramme } from '../../context/ProgrammeContext';
 import { apiFetch } from '../../lib/apiClient';
+import { withProgramme } from '../../lib/programmeApi';
 
 type Member = {
   _id: string;
@@ -35,6 +37,8 @@ type AttendanceReport = {
   attendanceRate: number;
   cubsAttendanceRate: number;
   tigersAttendanceRate: number;
+  juniorsAttendanceRate?: number;
+  adultsAttendanceRate?: number;
   mostRegular: AttendanceMemberReport[];
   lowAttendance: AttendanceMemberReport[];
 };
@@ -84,23 +88,38 @@ function MembershipBadge({ status }: { status?: string }) {
 function SessionBadge({ session }: { session?: string }) {
   const value = session || 'UNKNOWN';
 
+  const badgeClass =
+    value === 'CUBS'
+      ? 'bg-orange-50 text-orange-700'
+      : value === 'TIGERS'
+      ? 'bg-blue-50 text-blue-700'
+      : value === 'ADULTS'
+      ? 'bg-violet-50 text-violet-700'
+      : value === 'JUNIORS'
+      ? 'bg-cyan-50 text-cyan-700'
+      : 'bg-slate-100 text-slate-600';
+
   return (
     <span
-      className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-        value === 'CUBS'
-          ? 'bg-orange-50 text-orange-700'
-          : value === 'TIGERS'
-          ? 'bg-blue-50 text-blue-700'
-          : 'bg-slate-100 text-slate-600'
-      }`}
+      className={`inline-flex w-fit items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClass}`}
     >
       {value}
     </span>
   );
 }
 
+function formatSessionLabel(session: string) {
+  return session
+    .toLowerCase()
+    .replace(/(^|_)([a-z])/g, (_, prefix, letter) =>
+      `${prefix ? ' ' : ''}${letter.toUpperCase()}`,
+    )
+    .trim();
+}
+
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { programmeId, programme } = useProgramme();
 
   const [members, setMembers] = useState<Member[]>([]);
   const [attendanceReport, setAttendanceReport] =
@@ -112,9 +131,13 @@ export default function DashboardPage() {
     user?.roles.includes('SUPER_ADMIN');
 
   useEffect(() => {
+    setLoading(true);
+
     Promise.all([
-      apiFetch<Member[]>('/members'),
-      apiFetch<AttendanceReport>('/attendance/report'),
+      apiFetch<Member[]>(withProgramme('/members', programmeId)),
+      apiFetch<AttendanceReport>(
+        withProgramme('/attendance/report', programmeId),
+      ),
     ])
       .then(([memberData, attendanceData]) => {
         setMembers(memberData);
@@ -126,7 +149,7 @@ export default function DashboardPage() {
         setAttendanceReport(null);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [programmeId]);
 
   const totalMembers = members.length;
 
@@ -138,13 +161,58 @@ export default function DashboardPage() {
     (member) => member.membershipStatus === 'EXPIRED',
   ).length;
 
-  const cubsCount = members.filter(
-    (member) => member.session === 'CUBS',
-  ).length;
+  const sessionSummaries = useMemo(() => {
+    const preferredOrder =
+      programmeId === 'BRAWLERS_BOXING'
+        ? ['CUBS', 'TIGERS']
+        : ['JUNIORS', 'ADULTS'];
 
-  const tigersCount = members.filter(
-    (member) => member.session === 'TIGERS',
-  ).length;
+    const actualSessions = Array.from(
+      new Set(
+        members
+          .map((member) => member.session || 'UNKNOWN')
+          .filter((session) => session !== 'UNKNOWN'),
+      ),
+    );
+
+    const orderedSessions = [
+      ...preferredOrder.filter((session) => actualSessions.includes(session)),
+      ...actualSessions.filter((session) => !preferredOrder.includes(session)),
+    ].slice(0, 2);
+
+    return orderedSessions.map((session) => ({
+      session,
+      count: members.filter((member) => member.session === session).length,
+    }));
+  }, [members, programmeId]);
+
+  const getAttendanceRateForSession = (session: string) => {
+    if (!attendanceReport) return 0;
+
+    if (session === 'CUBS') return attendanceReport.cubsAttendanceRate ?? 0;
+    if (session === 'TIGERS') return attendanceReport.tigersAttendanceRate ?? 0;
+    if (session === 'JUNIORS') return attendanceReport.juniorsAttendanceRate ?? 0;
+    if (session === 'ADULTS') return attendanceReport.adultsAttendanceRate ?? 0;
+
+    return 0;
+  };
+
+  const getSessionTrend = (session: string) => {
+    if (programmeId === 'BRAWLERS_BOXING') {
+      if (session === 'CUBS') return '5-10 year olds';
+      if (session === 'TIGERS') return '11-17 year olds';
+    }
+
+    return `${formatSessionLabel(session)} participants`;
+  };
+
+  const getSessionVariant = (
+    session: string,
+  ): 'default' | 'orange' | 'blue' => {
+    if (session === 'CUBS') return 'orange';
+    if (session === 'TIGERS') return 'blue';
+    return 'default';
+  };
 
   const recentMembers = useMemo(() => {
     return [...members]
@@ -174,8 +242,8 @@ export default function DashboardPage() {
               </h1>
 
               <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80">
-                Here&apos;s a live overview of your members, payments and
-                attendance.
+                Here&apos;s a live overview of {programme.name} members,
+                payments and attendance.
               </p>
 
               <div className="mt-5 flex flex-col gap-2 sm:flex-row">
@@ -219,19 +287,15 @@ export default function DashboardPage() {
               variant="danger"
             />
 
-            <StatCard
-              label="Cubs"
-              value={loading ? '...' : String(cubsCount)}
-              trend="5-10 year olds"
-              variant="orange"
-            />
-
-            <StatCard
-              label="Tigers"
-              value={loading ? '...' : String(tigersCount)}
-              trend="11-17 year olds"
-              variant="blue"
-            />
+            {sessionSummaries.map(({ session, count }) => (
+              <StatCard
+                key={session}
+                label={formatSessionLabel(session)}
+                value={loading ? '...' : String(count)}
+                trend={getSessionTrend(session)}
+                variant={getSessionVariant(session)}
+              />
+            ))}
           </div>
 
           <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
@@ -242,7 +306,8 @@ export default function DashboardPage() {
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Overall attendance performance across all marked registers.
+                  {programme.name} attendance performance across all marked
+                  registers.
                 </p>
               </div>
 
@@ -265,27 +330,19 @@ export default function DashboardPage() {
                 variant="success"
               />
 
-              <StatCard
-                label="Cubs Attendance"
-                value={
-                  loading
-                    ? '...'
-                    : `${attendanceReport?.cubsAttendanceRate ?? 0}%`
-                }
-                trend="Cubs register rate"
-                variant="orange"
-              />
-
-              <StatCard
-                label="Tigers Attendance"
-                value={
-                  loading
-                    ? '...'
-                    : `${attendanceReport?.tigersAttendanceRate ?? 0}%`
-                }
-                trend="Tigers register rate"
-                variant="blue"
-              />
+              {sessionSummaries.map(({ session }) => (
+                <StatCard
+                  key={session}
+                  label={`${formatSessionLabel(session)} Attendance`}
+                  value={
+                    loading
+                      ? '...'
+                      : `${getAttendanceRateForSession(session)}%`
+                  }
+                  trend={`${formatSessionLabel(session)} register rate`}
+                  variant={getSessionVariant(session)}
+                />
+              ))}
             </div>
           </section>
 

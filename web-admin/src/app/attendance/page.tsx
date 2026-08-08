@@ -6,8 +6,14 @@ import { Protected } from '../../components/Protected';
 import { Shell } from '../../components/layout/Shell';
 import { apiFetch } from '../../lib/apiClient';
 import { useAuth } from '../../context/AuthContext';
+import { useProgramme } from '../../context/ProgrammeContext';
+import { withProgramme } from '../../lib/programmeApi';
 
-type Session = 'CUBS' | 'TIGERS';
+type Session =
+  | 'CUBS'
+  | 'TIGERS'
+  | 'JUNIORS'
+  | 'ADULTS';
 type Status = 'PRESENT' | 'ABSENT';
 
 type RegisterMember = {
@@ -59,6 +65,8 @@ export default function AttendancePage() {
   const [loading, setLoading] = useState(true);
   const [markingId, setMarkingId] = useState<string | null>(null);
 
+  const { programmeId, programme } = useProgramme();
+
   const { user } = useAuth();
 
   async function loadRegister(selectedSession = session) {
@@ -66,7 +74,10 @@ export default function AttendancePage() {
 
     try {
       const data = await apiFetch<RegisterResponse>(
-        `/attendance/register/${selectedSession}`,
+        withProgramme(
+          `/attendance/register/${selectedSession}`,
+          programmeId,
+        ),
       );
 
       setRegister(data);
@@ -82,7 +93,7 @@ export default function AttendancePage() {
     void loadRegister(session);
     // loadRegister intentionally reloads when the selected session changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [session, programmeId]);
 
   async function markAttendance(memberId: string, status: Status) {
     if (!register?.registerOpen) {
@@ -93,15 +104,18 @@ export default function AttendancePage() {
     setMarkingId(memberId);
 
     try {
-      await apiFetch('/attendance/mark', {
-        method: 'POST',
-        body: JSON.stringify({
-          memberId,
-          session,
-          status,
-          markedBy: user?.email,
-        }),
-      });
+      await apiFetch(
+        withProgramme('/attendance/mark', programmeId),
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            memberId,
+            session,
+            status,
+            markedBy: user?.email,
+          }),
+        },
+      );
 
       await loadRegister(session);
     } catch (err) {
@@ -116,6 +130,11 @@ export default function AttendancePage() {
     session === 'CUBS'
       ? 'Cubs · Saturday 12:30pm – 1:45pm'
       : 'Tigers · Saturday 1:45pm – 3:00pm';
+  
+  const availableSessions =
+    programmeId === 'BRAWLERS_BOXING'
+      ? (['CUBS', 'TIGERS'] as const)
+      : (['JUNIORS', 'ADULTS'] as const);
 
   return (
     <Protected roles={['COACH', 'ADMIN', 'SUPER_ADMIN']}>
@@ -126,7 +145,9 @@ export default function AttendancePage() {
               <h1 className="text-2xl font-semibold text-slate-900">
                 Take register
               </h1>
-              <p className="mt-1 text-sm text-slate-500">{sessionLabel}</p>
+              <p className="mt-1 text-sm text-slate-500">
+                {programme.name} · {sessionLabel}
+              </p>
             </div>
 
             <div className="flex gap-2">

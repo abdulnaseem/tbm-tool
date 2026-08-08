@@ -1,4 +1,3 @@
-// backend/src/payments/dto/payment-report-query.dto.ts
 import { Type } from 'class-transformer';
 import {
   IsDateString,
@@ -9,10 +8,12 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
+
 import {
   PaymentMethod,
   PaymentStatus,
 } from '../schemas/payment.schema';
+import { ProgrammeId } from '../../common/enums/programme-id.enum';
 
 export enum PaymentReportPeriod {
   THIS_TERM = 'THIS_TERM',
@@ -26,10 +27,15 @@ export enum PaymentReportPeriod {
 export enum PaymentSession {
   CUBS = 'CUBS',
   TIGERS = 'TIGERS',
+  JUNIORS = 'JUNIORS',
+  ADULTS = 'ADULTS',
   UNKNOWN = 'UNKNOWN',
 }
 
 export class PaymentReportQueryDto {
+  @IsEnum(ProgrammeId)
+  programmeId: ProgrammeId;
+
   @IsOptional()
   @IsEnum(PaymentReportPeriod)
   period: PaymentReportPeriod = PaymentReportPeriod.THIS_TERM;

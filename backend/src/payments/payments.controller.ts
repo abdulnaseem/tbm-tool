@@ -1,4 +1,5 @@
 // backend/src/payments/payments.controller.ts
+
 import {
   Body,
   Controller,
@@ -22,6 +23,7 @@ import { UserRole } from '../users/enums/user-role.enum';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { PaymentReportQueryDto } from './dto/payment-report-query.dto';
+import { parseProgrammeId } from '../common/programmes/programme.helper';
 
 type AuthenticatedRequest = Request & {
   user: {
@@ -76,12 +78,14 @@ export class PaymentsController {
   @Post()
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   create(
+    @Query('programmeId') programmeId: string,
     @Body() body: CreatePaymentDto,
     @Req() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.create(
       body,
       req.user.email,
+      parseProgrammeId(programmeId),
     );
   }
 
@@ -91,14 +95,21 @@ export class PaymentsController {
     UserRole.ADMIN,
     UserRole.SUPER_ADMIN,
   )
-  findByMember(@Param('memberId') memberId: string) {
-    return this.paymentsService.findByMember(memberId);
+  findByMember(
+    @Param('memberId') memberId: string,
+    @Query('programmeId') programmeId: string,
+  ) {
+    return this.paymentsService.findByMember(
+      memberId,
+      parseProgrammeId(programmeId),
+    );
   }
 
   @Patch(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
   update(
     @Param('id') id: string,
+    @Query('programmeId') programmeId: string,
     @Body() body: UpdatePaymentDto,
     @Req() req: AuthenticatedRequest,
   ) {
@@ -106,12 +117,19 @@ export class PaymentsController {
       id,
       body,
       req.user.email,
+      parseProgrammeId(programmeId),
     );
   }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
-  delete(@Param('id') id: string) {
-    return this.paymentsService.delete(id);
+  delete(
+    @Param('id') id: string,
+    @Query('programmeId') programmeId: string,
+  ) {
+    return this.paymentsService.delete(
+      id,
+      parseProgrammeId(programmeId),
+    );
   }
 }

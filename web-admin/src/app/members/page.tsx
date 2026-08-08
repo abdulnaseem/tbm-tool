@@ -9,6 +9,8 @@ import { apiFetch } from '../../lib/apiClient';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { useAuth } from '../../context/AuthContext';
+import { useProgramme } from '../../context/ProgrammeContext';
+import { withProgramme } from '../../lib/programmeApi';
 
 type Member = {
   _id: string;
@@ -24,7 +26,7 @@ type Member = {
   createdAt?: string;
 };
 
-type SessionFilter = 'ALL' | 'CUBS' | 'TIGERS' | 'UNKNOWN';
+type SessionFilter = 'ALL' | string;
 type StatusFilter = 'ALL' | 'ACTIVE' | 'EXPIRED';
 
 function formatDate(value?: string) {
@@ -73,15 +75,20 @@ function StatusBadge({ status }: { status?: string }) {
 function SessionBadge({ session }: { session?: string }) {
   const value = session || 'UNKNOWN';
 
+  const badgeClass =
+    value === 'CUBS'
+      ? 'bg-orange-50 text-orange-700'
+      : value === 'TIGERS'
+      ? 'bg-blue-50 text-blue-700'
+      : value === 'ADULTS'
+      ? 'bg-violet-50 text-violet-700'
+      : value === 'JUNIORS'
+      ? 'bg-cyan-50 text-cyan-700'
+      : 'bg-slate-100 text-slate-600';
+
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-        value === 'CUBS'
-          ? 'bg-orange-50 text-orange-700'
-          : value === 'TIGERS'
-          ? 'bg-blue-50 text-blue-700'
-          : 'bg-slate-100 text-slate-600'
-      }`}
+      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClass}`}
     >
       {value}
     </span>
@@ -95,6 +102,8 @@ export default function MembersPage() {
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>('ALL');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
+  const { programmeId, programme } = useProgramme();
+
   const { user } = useAuth();
 
   const canManageMembers =
@@ -102,14 +111,37 @@ export default function MembersPage() {
     user?.roles.includes('SUPER_ADMIN');
 
   useEffect(() => {
-    apiFetch<Member[]>('/members')
+    setLoading(true);
+  
+    apiFetch<Member[]>(
+      withProgramme('/members', programmeId),
+    )
       .then(setMembers)
-      .catch((err) => {
-        console.error('Failed to fetch members:', err);
+      .catch((error) => {
+        console.error('Failed to fetch members:', error);
         setMembers([]);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [programmeId]);
+
+  const sessionOptions = useMemo(() => {
+    const values = Array.from(
+      new Set(members.map((member) => member.session || 'UNKNOWN')),
+    );
+
+    const preferredOrder = ['CUBS', 'TIGERS', 'JUNIORS', 'ADULTS', 'UNKNOWN'];
+
+    return values.sort((a, b) => {
+      const aIndex = preferredOrder.indexOf(a);
+      const bIndex = preferredOrder.indexOf(b);
+
+      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+
+      return aIndex - bIndex;
+    });
+  }, [members]);
 
   const filteredMembers = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -197,7 +229,9 @@ export default function MembersPage() {
 
     saveAs(
       file,
-      `payment-register-${new Date().toISOString().slice(0, 10)}.xlsx`,
+      `payment-register-${programmeId.toLowerCase()}-${new Date()
+        .toISOString()
+        .slice(0, 10)}.xlsx`,
     );
   };
 
@@ -211,7 +245,7 @@ export default function MembersPage() {
                 Members
               </h1>
               <p className="mt-1 text-sm text-slate-500">
-                Overview of all registered child members.
+                {programme.name} members and participant records.
               </p>
             </div>
 
@@ -247,7 +281,7 @@ export default function MembersPage() {
 
             <div className="mt-4 space-y-3">
               <div className="flex gap-2 overflow-x-auto pb-1">
-                {(['ALL', 'CUBS', 'TIGERS', 'UNKNOWN'] as const).map((tab) => (
+                {(['ALL', ...sessionOptions] as SessionFilter[]).map((tab) => (
                   <button
                     key={tab}
                     type="button"

@@ -1,15 +1,34 @@
 // backend/src/members/schemas/member-profile.schema.ts
+
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { ProgrammeId } from '../../common/enums/programme-id.enum';
 
 export type MemberProfileDocument = HydratedDocument<MemberProfile>;
 
 export type Discipline = 'BOXING' | 'BJJ' | 'MUAY_THAI';
 export type MembershipStatus = 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'TRIAL';
-export type Session = 'CUBS' | 'TIGERS' | 'ADULTS' | 'UNKNOWN';
+export type Session =
+  | 'CUBS'
+  | 'TIGERS'
+  | 'JUNIORS'
+  | 'ADULTS'
+  | 'UNKNOWN';
 
-@Schema({ timestamps: true, collection: 'members' })
+@Schema({
+  timestamps: true,
+  collection: 'members',
+  versionKey: false,
+})
 export class MemberProfile {
+  @Prop({
+    type: String,
+    enum: ProgrammeId,
+    default: ProgrammeId.BRAWLERS_BOXING,
+    index: true,
+  })
+  gymId: ProgrammeId;
+
   @Prop({ default: 'GUARDIAN' })
   accountType: 'GUARDIAN';
 
@@ -46,7 +65,7 @@ export class MemberProfile {
   @Prop({ default: 'UNKNOWN' })
   session: Session;
 
-  @Prop({ type: [String], default: ['BOXING'] })
+  @Prop({ type: [String], default: [] })
   disciplines: Discipline[];
 
   @Prop({ default: 'ACTIVE' })
@@ -85,11 +104,13 @@ export class MemberProfile {
   @Prop({ trim: true, default: 'IMPORTED_FROM_SHEET' })
   paymentIntentId: string;
 
-  @Prop({ trim: true, default: 'BRAWLERS_BOXING' })
-  gymId: string;
-
   @Prop({ trim: true, default: 'GOOGLE_SHEET_IMPORT' })
   importSource: string;
 }
 
-export const MemberProfileSchema = SchemaFactory.createForClass(MemberProfile);
+export const MemberProfileSchema =
+  SchemaFactory.createForClass(MemberProfile);
+
+MemberProfileSchema.index({ gymId: 1, createdAt: -1 });
+MemberProfileSchema.index({ gymId: 1, session: 1 });
+MemberProfileSchema.index({ gymId: 1, email: 1 });

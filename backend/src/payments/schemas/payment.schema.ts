@@ -1,6 +1,7 @@
 // backend/src/payments/schemas/payment.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { ProgrammeId } from '../../common/enums/programme-id.enum';
 
 export type PaymentDocument = HydratedDocument<Payment>;
 
@@ -27,6 +28,14 @@ export class Payment {
     index: true,
   })
   memberId: string;
+
+  @Prop({
+    type: String,
+    enum: ProgrammeId,
+    required: true,
+    index: true,
+  })
+  gymId: ProgrammeId;
 
   @Prop({
     trim: true,
@@ -99,3 +108,14 @@ PaymentSchema.index({ status: 1, createdAt: -1 });
 PaymentSchema.index({ paymentMethod: 1, createdAt: -1 });
 PaymentSchema.index({ memberId: 1, periodStart: -1 });
 PaymentSchema.index({ periodStart: 1, periodEnd: 1 });
+PaymentSchema.index({
+  gymId: 1,
+  createdAt: -1,
+});
+
+PaymentSchema.index({
+  gymId: 1,
+  status: 1,
+  periodStart: 1,
+  periodEnd: 1,
+});

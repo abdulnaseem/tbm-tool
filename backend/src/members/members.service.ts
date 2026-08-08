@@ -1,31 +1,40 @@
-//backend/src/members/members.service.ts
+// backend/src/members/members.service.ts
+
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+
 import {
   MemberProfile,
   MemberProfileDocument,
 } from './schemas/member-profile.schema';
-import { PaymentsService } from 'src/payments/payments.service';
+
+import { PaymentsService } from '../payments/payments.service';
+import { ProgrammeId } from '../common/enums/programme-id.enum';
 
 @Injectable()
 export class MembersService {
   constructor(
     @InjectModel(MemberProfile.name)
-    private memberModel: Model<MemberProfileDocument>,
+    private readonly memberModel: Model<MemberProfileDocument>,
 
-    private paymentsService: PaymentsService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
-  async findAll() {
-    const members = await this.memberModel.find().sort({ createdAt: -1 }).lean();
-  
+  async findAll(programmeId: ProgrammeId) {
+    const members = await this.memberModel
+      .find({ gymId: programmeId })
+      .sort({ createdAt: -1 })
+      .lean();
+
     return Promise.all(
       members.map(async (member: any) => {
-        const hasActivePayment = await this.paymentsService.hasActivePayment(
-          String(member._id),
-        );
-  
+        const hasActivePayment =
+          await this.paymentsService.hasActivePayment(
+            String(member._id),
+            programmeId,
+          );
+
         return {
           ...member,
           membershipStatus: hasActivePayment ? 'ACTIVE' : 'EXPIRED',
@@ -34,8 +43,13 @@ export class MembersService {
     );
   }
 
-  async findOne(id: string) {
-    const member = await this.memberModel.findById(id).lean();
+  async findOne(id: string, programmeId: ProgrammeId) {
+    const member = await this.memberModel
+      .findOne({
+        _id: id,
+        gymId: programmeId,
+      })
+      .lean();
 
     if (!member) {
       throw new NotFoundException('Member not found');
@@ -45,127 +59,163 @@ export class MembersService {
   }
 
   async create(data: any) {
+    const programmeId =
+      data.gymId === ProgrammeId.THE_GRAPPLE_HUB
+        ? ProgrammeId.THE_GRAPPLE_HUB
+        : ProgrammeId.BRAWLERS_BOXING;
+
     const dob = data.childDateOfBirth
       ? new Date(data.childDateOfBirth)
-      : new Date();
-  
+      : undefined;
+
+    const defaultDisciplines =
+      programmeId === ProgrammeId.THE_GRAPPLE_HUB
+        ? ['BJJ']
+        : ['BOXING'];
+
+    const defaultPrice =
+      programmeId === ProgrammeId.THE_GRAPPLE_HUB ? 0 : 100;
+
     const member = await this.memberModel.create({
-      firstName: data.childFirstName || 'Unknown',
-      middleName: data.childMiddleName || '',
-      lastName: data.childLastName || 'Unknown',
-      gender: data.childsGender || '',
-      dateOfBirth: dob,
-      isMinor: true,
-      gymId: 'BRAWLERS_BOXING',
-  
+      gymId: programmeId,
+
       accountType: data.accountType || 'GUARDIAN',
-  
+
       guardianFirstName: data.guardianFirstName || '',
       guardianMiddleName: data.guardianMiddleName || '',
       guardianLastName: data.guardianLastName || '',
-      email: data.email || '',
-      relationship: data.relationship || 'Guardian',
-  
+      email: String(data.email || '').trim().toLowerCase(),
+      relationship: data.relationship || 'Parent/Guardian',
+
       childFirstName: data.childFirstName || '',
       childMiddleName: data.childMiddleName || '',
       childLastName: data.childLastName || '',
       childsGender: data.childsGender || '',
       childDateOfBirth: dob,
-  
+
       session: data.session || 'UNKNOWN',
-      sessionGroup: data.session || 'UNKNOWN',
-  
-      disciplines: data.disciplines?.length ? data.disciplines : ['BOXING'],
-      membershipStatus: 'ACTIVE',
-  
+
+      disciplines:
+        Array.isArray(data.disciplines) && data.disciplines.length
+          ? data.disciplines
+          : defaultDisciplines,
+
+      membershipStatus: data.membershipStatus || 'ACTIVE',
+
       allergies: data.allergies || '',
       medicalConditions: data.medicalConditions || '',
       medications: data.medications || '',
       safeguardingNotes: data.safeguardingNotes || '',
-  
+
       emergencyContactName: data.emergencyContactName || '',
       emergencyContactPhone: data.emergencyContactPhone || '',
-  
+
       consentSafeguarding: data.consentSafeguarding ?? true,
       consentData: data.consentData ?? true,
       consentPhotography: data.consentPhotography ?? false,
-  
-      totalPrice: Number(data.totalPrice || 100),
-      paymentIntentId: data.paymentIntentId || 'MANUAL_ADMIN_CREATE',
-  
-      importSource: 'MANUAL_ADMIN_CREATE',
+
+      totalPrice: Number(data.totalPrice ?? defaultPrice),
+
+      paymentIntentId:
+        data.paymentIntentId || 'MANUAL_ADMIN_CREATE',
+
+      importSource:
+        data.importSource || 'MANUAL_ADMIN_CREATE',
     });
-  
+
     return member.toObject();
   }
 
-  async delete(id: string) {
-    const member = await this.memberModel.findByIdAndDelete(id).lean();
-  
-    if (!member) {
-      throw new NotFoundException('Member not found');
-    }
-  
-    return { success: true };
-  }
-
-  async update(id: string, data: any) {
+  async update(
+    id: string,
+    programmeId: ProgrammeId,
+    data: any,
+  ) {
     const dob = data.childDateOfBirth
       ? new Date(data.childDateOfBirth)
       : undefined;
-  
-    const updateData: any = {
+
+    const defaultDisciplines =
+      programmeId === ProgrammeId.THE_GRAPPLE_HUB
+        ? ['BJJ']
+        : ['BOXING'];
+
+    const updateData: Record<string, unknown> = {
       accountType: data.accountType || 'GUARDIAN',
-  
+
       guardianFirstName: data.guardianFirstName || '',
       guardianMiddleName: data.guardianMiddleName || '',
       guardianLastName: data.guardianLastName || '',
-      email: data.email || '',
-      relationship: data.relationship || 'Guardian',
-  
+      email: String(data.email || '').trim().toLowerCase(),
+      relationship: data.relationship || 'Parent/Guardian',
+
       childFirstName: data.childFirstName || '',
       childMiddleName: data.childMiddleName || '',
       childLastName: data.childLastName || '',
       childsGender: data.childsGender || '',
-  
+
       session: data.session || 'UNKNOWN',
-  
-      disciplines: data.disciplines?.length ? data.disciplines : ['BOXING'],
-      membershipStatus: data.membershipStatus || 'ACTIVE',
-  
+
+      disciplines:
+        Array.isArray(data.disciplines) && data.disciplines.length
+          ? data.disciplines
+          : defaultDisciplines,
+
       allergies: data.allergies || '',
       medicalConditions: data.medicalConditions || '',
       medications: data.medications || '',
       safeguardingNotes: data.safeguardingNotes || '',
-  
+
       emergencyContactName: data.emergencyContactName || '',
       emergencyContactPhone: data.emergencyContactPhone || '',
-  
+
       consentSafeguarding: data.consentSafeguarding ?? true,
       consentData: data.consentData ?? true,
       consentPhotography: data.consentPhotography ?? false,
-  
-      totalPrice: Number(data.totalPrice || 100),
-      paymentIntentId: data.paymentIntentId || 'MANUAL_ADMIN_UPDATE',
-  
-      gymId: 'BRAWLERS_BOXING',
+
+      totalPrice: Number(data.totalPrice ?? 0),
+
+      paymentIntentId:
+        data.paymentIntentId || 'MANUAL_ADMIN_UPDATE',
     };
-  
+
     if (dob) {
       updateData.childDateOfBirth = dob;
     }
-  
+
     const member = await this.memberModel
-      .findByIdAndUpdate(id, updateData, {
-        new: true,
-        runValidators: true,
-      })
+      .findOneAndUpdate(
+        {
+          _id: id,
+          gymId: programmeId,
+        },
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        },
+      )
       .lean();
-  
+
     if (!member) {
       throw new NotFoundException('Member not found');
     }
-  
+
     return member;
+  }
+
+  async delete(id: string, programmeId: ProgrammeId) {
+    const member = await this.memberModel
+      .findOneAndDelete({
+        _id: id,
+        gymId: programmeId,
+      })
+      .lean();
+
+    if (!member) {
+      throw new NotFoundException('Member not found');
+    }
+
+    return { success: true };
   }
 }

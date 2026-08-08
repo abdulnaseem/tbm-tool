@@ -1,20 +1,22 @@
 // web-admin/src/components/layout/TopNav.tsx
+
 'use client';
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '../../context/AuthContext';
+import { useProgramme } from '../../context/ProgrammeContext';
 
 export function TopNav() {
   const { logout } = useAuth();
+  const { programme } = useProgramme();
+
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
-    if (loggingOut) {
-      return;
-    }
+    if (loggingOut) return;
 
     setLoggingOut(true);
 
@@ -29,19 +31,13 @@ export function TopNav() {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 min-w-0 shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white/95 pl-16 pr-4 backdrop-blur md:px-8">
-      <div className="flex items-center gap-2 md:hidden">
-        <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-brand-500 text-lg font-bold text-white">
-          M
-        </div>
-
-        <span className="text-sm font-semibold text-slate-900">
-          Brawlers Boxing
-        </span>
-      </div>
-
-      <div className="hidden md:block">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+      <div>
+        <p className="hidden text-xs font-medium uppercase tracking-wide text-slate-400 md:block">
           Admin portal
+        </p>
+
+        <p className="text-sm font-semibold text-slate-900 md:hidden">
+          {programme.name}
         </p>
       </div>
 

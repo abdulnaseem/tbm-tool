@@ -8,6 +8,9 @@ import { Protected } from '../../../components/Protected';
 import { Shell } from '../../../components/layout/Shell';
 import { apiFetch } from '../../../lib/apiClient';
 import { useAuth } from '../../../context/AuthContext';
+import { useProgramme } from '../../../context/ProgrammeContext';
+import { withProgramme } from '../../../lib/programmeApi';
+
 
 type MemberDetail = {
   _id: string;
@@ -138,21 +141,34 @@ export default function MemberDetailPage() {
   const [paymentSaving, setPaymentSaving] = useState(false);
 
   const { user } = useAuth();
+  const { programmeId, programme } = useProgramme();
 
   const canManageMembers =
     user?.roles.includes('ADMIN') ||
     user?.roles.includes('SUPER_ADMIN');
 
-  const defaultStart = '2026-07-04';
-  const defaultEnd = '2026-09-26';
+  const defaultStart =
+    programmeId === 'BRAWLERS_BOXING' ? '2026-07-04' : '';
+
+  const defaultEnd =
+    programmeId === 'BRAWLERS_BOXING' ? '2026-09-26' : '';
+
+  const defaultAmount =
+    programmeId === 'BRAWLERS_BOXING' ? 100 : undefined;
 
   async function loadData() {
     if (!memberId) return;
 
+    setLoading(true);
+
     try {
       const [memberData, paymentData] = await Promise.all([
-        apiFetch<MemberDetail>(`/members/${memberId}`),
-        apiFetch<Payment[]>(`/payments/member/${memberId}`),
+        apiFetch<MemberDetail>(
+          withProgramme(`/members/${memberId}`, programmeId),
+        ),
+        apiFetch<Payment[]>(
+          withProgramme(`/payments/member/${memberId}`, programmeId),
+        ),
       ]);
 
       setMember(memberData);
@@ -167,8 +183,10 @@ export default function MemberDetailPage() {
   }
 
   useEffect(() => {
-    loadData();
-  }, [memberId]);
+    void loadData();
+    // loadData intentionally reloads whenever the member or programme changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memberId, programmeId]);
 
   async function handleDelete() {
     if (!memberId) return;
@@ -180,9 +198,12 @@ export default function MemberDetailPage() {
     if (!confirmed) return;
 
     try {
-      await apiFetch(`/members/${memberId}`, {
-        method: 'DELETE',
-      });
+      await apiFetch(
+        withProgramme(`/members/${memberId}`, programmeId),
+        {
+          method: 'DELETE',
+        },
+      );
 
       router.replace('/members');
     } catch (err) {
@@ -204,7 +225,7 @@ export default function MemberDetailPage() {
     const payload = {
       memberId: member._id,
       guardianEmail: member.email || '',
-      amount: Number(form.get('amount') || 100),
+      amount: Number(form.get('amount') || 0),
       currency: 'GBP',
       paymentMethod: form.get('paymentMethod') || 'CASH',
       status: 'PAID',
@@ -214,10 +235,13 @@ export default function MemberDetailPage() {
     };
 
     try {
-      const newPayment = await apiFetch<Payment>('/payments', {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
+      const newPayment = await apiFetch<Payment>(
+        withProgramme('/payments', programmeId),
+        {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        },
+      );
 
       setPayments((currentPayments) => [newPayment, ...currentPayments]);
       formElement.reset();
@@ -248,9 +272,12 @@ export default function MemberDetailPage() {
     if (!confirmed) return;
 
     try {
-      await apiFetch(`/payments/${paymentId}`, {
-        method: 'DELETE',
-      });
+      await apiFetch(
+        withProgramme(`/payments/${paymentId}`, programmeId),
+        {
+          method: 'DELETE',
+        },
+      );
 
       await loadData();
     } catch (err) {
@@ -287,7 +314,7 @@ export default function MemberDetailPage() {
       <Protected roles={['COACH', 'ADMIN', 'SUPER_ADMIN']}>
         <Shell>
           <div className="rounded-2xl border border-slate-100 bg-white p-6 text-sm text-slate-500 shadow-soft">
-            Member not found.
+            Member not found in {programme.name}.
           </div>
         </Shell>
       </Protected>
@@ -326,6 +353,9 @@ export default function MemberDetailPage() {
               <h1 className="break-words text-xl font-semibold text-slate-900 sm:text-2xl">
                 {childFullName || 'Unnamed member'}
               </h1>
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                {programme.name}
+              </p>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {disciplines.length > 0 ? (
@@ -486,8 +516,9 @@ export default function MemberDetailPage() {
                     <input
                       name="amount"
                       type="number"
-                      defaultValue={100}
+                      defaultValue={defaultAmount}
                       min={0}
+                      required
                       step="0.01"
                       className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                     />
@@ -520,7 +551,7 @@ export default function MemberDetailPage() {
                       <input
                         name="periodStart"
                         type="date"
-                        defaultValue={defaultStart}
+                        defaultValue={defaultStart || undefined}
                         required
                         className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                       />
@@ -534,7 +565,7 @@ export default function MemberDetailPage() {
                       <input
                         name="periodEnd"
                         type="date"
-                        defaultValue={defaultEnd}
+                        defaultValue={defaultEnd || undefined}
                         required
                         className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-100"
                       />
