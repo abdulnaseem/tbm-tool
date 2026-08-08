@@ -22,6 +22,7 @@ import {
 import { Protected } from '../../components/Protected';
 import { Shell } from '../../components/layout/Shell';
 import { ApiError, apiFetch } from '../../lib/apiClient';
+import { useProgramme } from '../../context/ProgrammeContext';
 import type {
   PaymentMethod,
   PaymentReportPeriod,
@@ -116,6 +117,8 @@ function getErrorMessage(
 }
 
 export default function PaymentsPage() {
+  const { programmeId, programme } = useProgramme();
+
   const defaultCustomRange = useMemo(
     () => getDefaultCustomRange(),
     [],
@@ -159,6 +162,7 @@ export default function PaymentsPage() {
 
   const buildBaseQuery = useCallback(() => {
     const params = new URLSearchParams({
+      programmeId,
       period,
     });
   
@@ -172,6 +176,7 @@ export default function PaymentsPage() {
     appliedCustomFrom,
     appliedCustomTo,
     period,
+    programmeId,
   ]);
 
   const loadStatistics = useCallback(
@@ -273,6 +278,10 @@ export default function PaymentsPage() {
   ]);
 
   useEffect(() => {
+    setPaymentPage(1);
+  }, [programmeId]);
+
+  useEffect(() => {
     void loadStatistics();
   }, [loadStatistics]);
 
@@ -364,8 +373,11 @@ export default function PaymentsPage() {
               </h1>
 
               <p className="mt-1 text-sm text-slate-500">
-                Monitor revenue, payment activity and membership
-                coverage.
+                Monitor revenue, payment activity and membership coverage for{' '}
+                <span className="font-medium text-slate-700">
+                  {programme.name}
+                </span>
+                .
               </p>
             </div>
 
