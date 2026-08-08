@@ -25,6 +25,6 @@ export const PROGRAMMES: Programme[] = [
     name: 'The Grapple Hub',
     shortName: 'Grappling',
     description: 'Brazilian Jiu-Jitsu programme',
-    logo: '/grapple-hub-logo.jpeg',
+    logo: '/grapple-hub-logo.jpg',
   },
 ];
