@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "grapple:link": "node scripts/generate-grapple-link.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

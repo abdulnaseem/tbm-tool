@@ -3,12 +3,18 @@
 
 import Image from 'next/image';
 import { FormEvent, useRef, useState } from 'react';
-import { apiPost } from '../../lib/api';
-import { getSessionFromDob, isEmail, isRequired } from '../../lib/signup-validation';
-import { RecaptchaBox } from './shared/RecaptchaBox';
 import ReCAPTCHA from 'react-google-recaptcha';
 
-type AccountType = 'GUARDIAN' | 'ADULT';
+import { apiPost } from '../../lib/api';
+import { isEmail, isRequired } from '../../lib/signup-validation';
+import {
+  getProgramme,
+  ProgrammeId,
+  SignupAccountType,
+} from '../../config/programmes';
+import { RecaptchaBox } from './shared/RecaptchaBox';
+
+type AccountType = SignupAccountType;
 
 type SignupForm = {
   accountType: AccountType;
@@ -78,16 +84,28 @@ const initialForm: SignupForm = {
   agreedToTerms: false,
 };
 
-export default function SignupWizard() {
+type SignupWizardProps = {
+  programmeId?: ProgrammeId;
+};
+
+export default function SignupWizard({
+  programmeId = 'BRAWLERS_BOXING',
+}: SignupWizardProps) {
+  const programme = getProgramme(programmeId);
+
   const [form, setForm] = useState<SignupForm>(initialForm);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [recaptchaToken, setRecaptchaToken] = useState<string | null>(null);
+  const [recaptchaToken, setRecaptchaToken] =
+    useState<string | null>(null);
 
   const recaptchaRef = useRef<ReCAPTCHA>(null);
 
-  function update<K extends keyof SignupForm>(key: K, value: SignupForm[K]) {
+  function update<K extends keyof SignupForm>(
+    key: K,
+    value: SignupForm[K],
+  ) {
     setForm((current) => ({
       ...current,
       [key]: value,
@@ -95,7 +113,9 @@ export default function SignupWizard() {
   }
 
   function validate() {
-    if (!isEmail(form.email)) return 'Please enter a valid email address.';
+    if (!isEmail(form.email)) {
+      return 'Please enter a valid email address.';
+    }
 
     if (!form.agreedToTerms) {
       return 'You must agree to the terms and conditions before submitting.';
@@ -110,17 +130,41 @@ export default function SignupWizard() {
     }
 
     if (form.accountType === 'GUARDIAN') {
-      if (!isRequired(form.guardianFirstName)) return 'Guardian first name is required.';
-      if (!isRequired(form.guardianLastName)) return 'Guardian last name is required.';
-      if (!isRequired(form.childFirstName)) return 'Child first name is required.';
-      if (!isRequired(form.childLastName)) return 'Child last name is required.';
-      if (!isRequired(form.childDateOfBirth)) return 'Child date of birth is required.';
+      if (!isRequired(form.guardianFirstName)) {
+        return 'Guardian first name is required.';
+      }
+      if (!isRequired(form.guardianLastName)) {
+        return 'Guardian last name is required.';
+      }
+      if (!isRequired(form.childFirstName)) {
+        return 'Child first name is required.';
+      }
+      if (!isRequired(form.childLastName)) {
+        return 'Child last name is required.';
+      }
+      if (!isRequired(form.childDateOfBirth)) {
+        return 'Child date of birth is required.';
+      }
     }
 
     if (form.accountType === 'ADULT') {
-      if (!isRequired(form.adultFirstName)) return 'First name is required.';
-      if (!isRequired(form.adultLastName)) return 'Last name is required.';
-      if (!isRequired(form.adultDateOfBirth)) return 'Date of birth is required.';
+      if (!isRequired(form.adultFirstName)) {
+        return 'First name is required.';
+      }
+      if (!isRequired(form.adultLastName)) {
+        return 'Last name is required.';
+      }
+      if (!isRequired(form.adultDateOfBirth)) {
+        return 'Date of birth is required.';
+      }
+    }
+
+    if (!isRequired(form.emergencyContactName)) {
+      return 'Emergency contact name is required.';
+    }
+
+    if (!isRequired(form.emergencyContactPhone)) {
+      return 'Emergency contact phone is required.';
     }
 
     if (!recaptchaToken) {
@@ -145,26 +189,42 @@ export default function SignupWizard() {
 
     const isGuardian = form.accountType === 'GUARDIAN';
 
-    const dob = isGuardian ? form.childDateOfBirth : form.adultDateOfBirth;
-    const session = getSessionFromDob(dob);
+    const dob = isGuardian
+      ? form.childDateOfBirth
+      : form.adultDateOfBirth;
+
+    const session = programme.getSession(
+      dob,
+      form.accountType,
+    );
 
     const payload = {
       accountType: form.accountType,
 
-      guardianFirstName: isGuardian ? form.guardianFirstName : form.adultFirstName,
-      guardianLastName: isGuardian ? form.guardianLastName : form.adultLastName,
+      guardianFirstName: isGuardian
+        ? form.guardianFirstName
+        : form.adultFirstName,
+      guardianLastName: isGuardian
+        ? form.guardianLastName
+        : form.adultLastName,
       relationship: isGuardian ? form.relationship : 'Self',
       email: form.email,
       phone: form.phone,
 
-      childFirstName: isGuardian ? form.childFirstName : form.adultFirstName,
+      childFirstName: isGuardian
+        ? form.childFirstName
+        : form.adultFirstName,
       childMiddleName: isGuardian ? form.childMiddleName : '',
-      childLastName: isGuardian ? form.childLastName : form.adultLastName,
-      childsGender: isGuardian ? form.childsGender : form.adultGender,
+      childLastName: isGuardian
+        ? form.childLastName
+        : form.adultLastName,
+      childsGender: isGuardian
+        ? form.childsGender
+        : form.adultGender,
       childDateOfBirth: dob,
 
       session,
-      disciplines: ['BOXING'],
+      disciplines: [programme.discipline],
 
       emergencyContactName: form.emergencyContactName,
       emergencyContactPhone: form.emergencyContactPhone,
@@ -179,18 +239,24 @@ export default function SignupWizard() {
       consentPhotography: form.consentPhotography,
       agreedToTerms: form.agreedToTerms,
 
-      importSource: 'PUBLIC_SIGNUP',
+      importSource: programme.importSource,
       recaptchaToken,
     };
 
     try {
-      await apiPost('/public/signup', payload);
+      await apiPost(programme.apiPath, payload);
+
       setRecaptchaToken(null);
       recaptchaRef.current?.reset();
       setSuccess(true);
+      window.scrollTo(0, 0);
     } catch (err) {
       console.error(err);
-      setError('Signup failed. Please check your details and try again.');
+      setError(
+        'Signup failed. Please check your details and try again.',
+      );
+      recaptchaRef.current?.reset();
+      setRecaptchaToken(null);
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +264,7 @@ export default function SignupWizard() {
 
   if (success) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-8">
         <div className="w-full max-w-xl rounded-3xl border border-slate-100 bg-white p-8 text-center shadow-xl">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
             <svg
@@ -208,6 +274,7 @@ export default function SignupWizard() {
               viewBox="0 0 24 24"
               stroke="currentColor"
               strokeWidth={2}
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -216,40 +283,40 @@ export default function SignupWizard() {
               />
             </svg>
           </div>
-  
+
           <h1 className="text-2xl font-bold text-slate-900">
             Registration Submitted Successfully
           </h1>
-  
+
           <p className="mt-4 leading-relaxed text-slate-600">
-            Thank you for registering for <strong>The Butterfly Movement</strong>. Your
-            registration has been received successfully.
+            {programme.success.thankYou}
           </p>
-  
+
           <p className="mt-3 leading-relaxed text-slate-600">
-            A confirmation email has been sent to the email address you provided.
-            If you don't receive it within a few minutes, please check your
-            <strong> Spam</strong> or <strong>Junk</strong> folder.
+            A confirmation email has been sent to the email address you
+            provided. If you do not receive it within a few minutes, please
+            check your <strong>Spam</strong> or <strong>Junk</strong> folder.
           </p>
-  
+
+          {programme.success.attendanceMessage && (
+            <p className="mt-3 leading-relaxed text-slate-600">
+              {programme.success.attendanceMessage}
+            </p>
+          )}
+
           <p className="mt-3 leading-relaxed text-slate-600">
-            You're welcome to attend our next boxing session this coming
-            <strong> Saturday at the Osmani Centre</strong>. Our coaching team
-            will be there to welcome you and answer any questions you may have.
-          </p>
-  
-          <p className="mt-3 leading-relaxed text-slate-600">
-            If you have any questions before attending, please contact us on
+            If you have any questions, please contact us on
             <a
               href="tel:07715316840"
-              className="ml-1 font-semibold text-brand-600 hover:underline"
+              className="ml-1 font-semibold text-green-700 hover:underline"
             >
               07715&nbsp;316840
-            </a>.
+            </a>
+            .
           </p>
-  
+
           <p className="mt-5 font-medium text-slate-900">
-            We look forward to welcoming you to The Butterfly Movement!
+            {programme.success.closingMessage}
           </p>
         </div>
       </main>
@@ -260,7 +327,7 @@ export default function SignupWizard() {
     <main className="min-h-screen bg-slate-50 px-3 py-4 sm:px-4 sm:py-6 md:py-8">
       <form
         onSubmit={handleSubmit}
-        className="mx-auto w-full max-w-4xl rounded-2xl sm:rounded-3xl bg-white p-4 sm:p-6 md:p-8 shadow-xl border border-slate-100 space-y-7 md:space-y-8"
+        className="mx-auto w-full max-w-4xl space-y-7 rounded-2xl border border-slate-100 bg-white p-4 shadow-xl sm:rounded-3xl sm:p-6 md:space-y-8 md:p-8"
       >
         <header className="text-center">
           <div className="flex flex-col items-center gap-4">
@@ -269,147 +336,199 @@ export default function SignupWizard() {
               alt="The Butterfly Movement"
               width={220}
               height={150}
-              className="h-auto w-40 sm:w-52 md:w-64 object-contain"
+              className="h-auto w-40 object-contain sm:w-52 md:w-64"
               priority
             />
 
             <div className="h-px w-full max-w-sm bg-slate-200" />
 
             <Image
-              src="/brawlers-boxing.jpeg"
-              alt="Brawlers Boxing"
+              src={programme.logoSrc}
+              alt={programme.logoAlt}
               width={180}
               height={180}
-              className="h-auto w-28 sm:w-36 md:w-40 object-contain"
+              className="h-auto w-28 object-contain sm:w-36 md:w-40"
               priority
             />
           </div>
 
-          <p className="mt-4 text-[10px] sm:text-xs font-semibold uppercase tracking-[0.18em] sm:tracking-[0.25em] text-green-700">
+          <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.18em] text-green-700 sm:text-xs sm:tracking-[0.25em]">
             The Butterfly Movement presents
           </p>
 
-          <h1 className="mt-2 text-[28px] sm:text-4xl md:text-5xl font-bold leading-tight text-slate-900">
-            <span className="block whitespace-nowrap">Brawlers Boxing</span>
-            <span className="block">Sign Up</span>
+          <h1 className="mt-2 text-[28px] font-bold leading-tight text-slate-900 sm:text-4xl md:text-5xl">
+            <span className="block">{programme.signupTitleLine1}</span>
+            <span className="block">{programme.signupTitleLine2}</span>
           </h1>
 
-          <p className="mx-auto mt-3 max-w-2xl text-base sm:text-lg text-slate-600 leading-relaxed">
-            Complete this form to register yourself or your child for the Brawlers
-            Boxing programme.
+          <p className="mx-auto mt-3 max-w-2xl text-base leading-relaxed text-slate-600 sm:text-lg">
+            {programme.signupDescription}
           </p>
         </header>
-
-        {/* <section>
-          <h2 className="text-lg font-semibold text-slate-900">
-            Who are you registering?
-          </h2>
-
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => update('accountType', 'GUARDIAN')}
-              className={`rounded-2xl border p-4 text-left ${
-                form.accountType === 'GUARDIAN'
-                  ? 'border-green-700 bg-green-50'
-                  : 'border-slate-200'
-              }`}
-            >
-              <div className="font-semibold">My child</div>
-              <div className="text-sm text-slate-500">
-                Parent or guardian registration
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => update('accountType', 'ADULT')}
-              className={`rounded-2xl border p-4 text-left ${
-                form.accountType === 'ADULT'
-                  ? 'border-green-700 bg-green-50'
-                  : 'border-slate-200'
-              }`}
-            >
-              <div className="font-semibold">Myself</div>
-              <div className="text-sm text-slate-500">
-                Adult self-registration
-              </div>
-            </button>
-          </div>
-        </section> */}
 
         {form.accountType === 'GUARDIAN' ? (
           <>
             <Section title="Parent / Guardian details">
-              <Input label="Guardian first name" value={form.guardianFirstName} onChange={(v) => update('guardianFirstName', v)} required />
-              <Input label="Guardian last name" value={form.guardianLastName} onChange={(v) => update('guardianLastName', v)} required />
-              <Input label="Relationship" value={form.relationship} onChange={(v) => update('relationship', v)} />
-              <Input label="Email" type="email" value={form.email} onChange={(v) => update('email', v)} required />
-              <Input label="Phone" value={form.phone} onChange={(v) => update('phone', v)} />
+              <Input
+                label="Guardian first name"
+                value={form.guardianFirstName}
+                onChange={(v) => update('guardianFirstName', v)}
+                required
+              />
+              <Input
+                label="Guardian last name"
+                value={form.guardianLastName}
+                onChange={(v) => update('guardianLastName', v)}
+                required
+              />
+              <Input
+                label="Relationship"
+                value={form.relationship}
+                onChange={(v) => update('relationship', v)}
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={form.email}
+                onChange={(v) => update('email', v)}
+                required
+              />
+              <Input
+                label="Phone"
+                type="tel"
+                value={form.phone}
+                onChange={(v) => update('phone', v)}
+              />
             </Section>
 
             <Section title="Child details">
-              <Input label="Child first name" value={form.childFirstName} onChange={(v) => update('childFirstName', v)} required />
-              <Input label="Child middle name" value={form.childMiddleName} onChange={(v) => update('childMiddleName', v)} />
-              <Input label="Child last name" value={form.childLastName} onChange={(v) => update('childLastName', v)} required />
-              <Input label="Date of birth" type="date" value={form.childDateOfBirth} onChange={(v) => update('childDateOfBirth', v)} required />
-              <Select label="Gender" value={form.childsGender} onChange={(v) => update('childsGender', v)} />
+              <Input
+                label="Child first name"
+                value={form.childFirstName}
+                onChange={(v) => update('childFirstName', v)}
+                required
+              />
+              <Input
+                label="Child middle name"
+                value={form.childMiddleName}
+                onChange={(v) => update('childMiddleName', v)}
+              />
+              <Input
+                label="Child last name"
+                value={form.childLastName}
+                onChange={(v) => update('childLastName', v)}
+                required
+              />
+              <Input
+                label="Date of birth"
+                type="date"
+                value={form.childDateOfBirth}
+                onChange={(v) => update('childDateOfBirth', v)}
+                required
+              />
+              <Select
+                label="Gender"
+                value={form.childsGender}
+                onChange={(v) => update('childsGender', v)}
+              />
             </Section>
           </>
         ) : (
           <Section title="Your details">
-            <Input label="First name" value={form.adultFirstName} onChange={(v) => update('adultFirstName', v)} required />
-            <Input label="Last name" value={form.adultLastName} onChange={(v) => update('adultLastName', v)} required />
-            <Input label="Email" type="email" value={form.email} onChange={(v) => update('email', v)} required />
-            <Input label="Phone" value={form.phone} onChange={(v) => update('phone', v)} />
-            <Input label="Date of birth" type="date" value={form.adultDateOfBirth} onChange={(v) => update('adultDateOfBirth', v)} required />
-            <Select label="Gender" value={form.adultGender} onChange={(v) => update('adultGender', v)} />
+            <Input
+              label="First name"
+              value={form.adultFirstName}
+              onChange={(v) => update('adultFirstName', v)}
+              required
+            />
+            <Input
+              label="Last name"
+              value={form.adultLastName}
+              onChange={(v) => update('adultLastName', v)}
+              required
+            />
+            <Input
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={(v) => update('email', v)}
+              required
+            />
+            <Input
+              label="Phone"
+              type="tel"
+              value={form.phone}
+              onChange={(v) => update('phone', v)}
+            />
+            <Input
+              label="Date of birth"
+              type="date"
+              value={form.adultDateOfBirth}
+              onChange={(v) => update('adultDateOfBirth', v)}
+              required
+            />
+            <Select
+              label="Gender"
+              value={form.adultGender}
+              onChange={(v) => update('adultGender', v)}
+            />
           </Section>
         )}
 
         <Section title="Emergency contact">
-          <Input label="Emergency contact name" value={form.emergencyContactName} onChange={(v) => update('emergencyContactName', v)} required />
-          <Input label="Emergency contact phone" value={form.emergencyContactPhone} onChange={(v) => update('emergencyContactPhone', v)} required />
+          <Input
+            label="Emergency contact name"
+            value={form.emergencyContactName}
+            onChange={(v) => update('emergencyContactName', v)}
+            required
+          />
+          <Input
+            label="Emergency contact phone"
+            type="tel"
+            value={form.emergencyContactPhone}
+            onChange={(v) => update('emergencyContactPhone', v)}
+            required
+          />
         </Section>
 
         <section>
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
             Medical information
           </h2>
 
           <div className="mt-4 space-y-3">
-            <Textarea label="Allergies" value={form.allergies} onChange={(v) => update('allergies', v)} />
-            <Textarea label="Medical conditions" value={form.medicalConditions} onChange={(v) => update('medicalConditions', v)} />
-            <Textarea label="Medications" value={form.medications} onChange={(v) => update('medications', v)} />
-            <Textarea label="Safeguarding notes" value={form.safeguardingNotes} onChange={(v) => update('safeguardingNotes', v)} />
+            <Textarea
+              label="Allergies"
+              value={form.allergies}
+              onChange={(v) => update('allergies', v)}
+            />
+            <Textarea
+              label="Medical conditions"
+              value={form.medicalConditions}
+              onChange={(v) => update('medicalConditions', v)}
+            />
+            <Textarea
+              label="Medications"
+              value={form.medications}
+              onChange={(v) => update('medications', v)}
+            />
+            <Textarea
+              label="Safeguarding notes"
+              value={form.safeguardingNotes}
+              onChange={(v) => update('safeguardingNotes', v)}
+            />
           </div>
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:p-5">
-          <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
             Terms and conditions
           </h2>
 
           <div className="mt-4 space-y-4 text-sm leading-7 text-slate-800">
-            <p>
-              Brawlers Boxing - Summer Term 2026. Saturday 4th July 2026 to
-              Saturday 26th September 2026.
-            </p>
-            <p>
-              Summer term fee: £100 per child for the 3-month programme.
-            </p>
-            <p>
-              Each child must complete an individual registration form to secure
-              their place. Parents/guardians are responsible for ensuring regular
-              attendance. Refunds are not offered for absences, except genuine
-              health or medical reasons with appropriate evidence.
-            </p>
-            <p>
-              Cubs: 12:45pm-1:45pm. Tigers: 1:45pm-2:45pm.
-            </p>
-            <p>
-              Osmani Trust, <br/>58 Underwood Rd, <br/>London E1 5AW
-            </p>
+            {programme.terms.map((term) => (
+              <p key={term}>{term}</p>
+            ))}
           </div>
 
           <div className="mt-5 space-y-4">
@@ -450,14 +569,18 @@ export default function SignupWizard() {
         />
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div
+            role="alert"
+            className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          >
             {error}
           </div>
         )}
 
         <button
+          type="submit"
           disabled={submitting}
-          className="w-full rounded-xl bg-green-700 px-6 py-3 font-semibold text-white hover:bg-green-800 disabled:opacity-60"
+          className="w-full rounded-xl bg-green-700 px-6 py-3 font-semibold text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting ? 'Submitting...' : 'Submit registration'}
         </button>
@@ -475,11 +598,11 @@ function Section({
 }) {
   return (
     <section>
-      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">
+      <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
         {title}
       </h2>
 
-      <div className="mt-4 sm:mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-4 grid gap-4 sm:mt-6 md:grid-cols-2">
         {children}
       </div>
     </section>
@@ -510,20 +633,7 @@ function Input({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="
-          mt-1
-          w-full
-          rounded-xl
-          border
-          border-slate-300
-          px-4 
-          py-3 
-          sm:py-3.5
-          text-slate-900
-          placeholder:text-slate-400
-          outline-none
-          focus:border-green-700
-        "
+        className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-green-700 sm:py-3.5"
         required={required}
       />
     </label>
@@ -541,21 +651,14 @@ function Select({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-slate-900">{label}</span>
+      <span className="text-sm font-semibold text-slate-900">
+        {label}
+      </span>
+
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-300
-                    px-4
-                    py-3
-                    text-slate-900
-                    outline-none
-                    focus:border-green-700
-                  "
+        className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-green-700"
       >
         <option value="">Select gender</option>
         <option value="Male">Male</option>
@@ -577,22 +680,14 @@ function Textarea({
 }) {
   return (
     <label className="block">
-      <span className="text-sm font-semibold text-slate-900">{label}</span>
+      <span className="text-sm font-semibold text-slate-900">
+        {label}
+      </span>
+
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1
-                    min-h-24
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-300
-                    px-4
-                    py-3
-                    text-slate-900
-                    outline-none
-                    focus:border-green-700
-                  "
+        className="mt-1 min-h-24 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none focus:border-green-700"
       />
     </label>
   );
@@ -606,23 +701,22 @@ function Checkbox({
 }: {
   label: string;
   checked: boolean;
-  onChange: (v: boolean) => void;
+  onChange: (value: boolean) => void;
   required?: boolean;
 }) {
   return (
-    <label className="flex items-start gap-3 cursor-pointer">
+    <label className="flex cursor-pointer items-start gap-3">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
+        required={required}
         className="mt-1 h-4 w-4 rounded border-slate-300 text-green-700 focus:ring-green-600"
       />
 
-      <span className="text-sm leading-6 font-medium text-slate-800">
+      <span className="text-sm font-medium leading-6 text-slate-800">
         {label}
-        {required && (
-          <span className="ml-1 text-red-500">*</span>
-        )}
+        {required && <span className="ml-1 text-red-500">*</span>}
       </span>
     </label>
   );
