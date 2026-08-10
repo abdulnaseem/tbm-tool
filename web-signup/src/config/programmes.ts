@@ -57,7 +57,7 @@ export const PROGRAMMES: Record<ProgrammeId, ProgrammeConfig> = {
   THE_GRAPPLE_HUB: {
     id: 'THE_GRAPPLE_HUB',
     name: 'The Grapple Hub',
-    logoSrc: '/grapple-hub-logo.jpeg',
+    logoSrc: '/grapple-hub.jpg',
     logoAlt: 'The Grapple Hub',
     discipline: 'BJJ',
     apiPath: '/public/signup/the-grapple-hub',

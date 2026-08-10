@@ -19,7 +19,7 @@ export default function GrappleHubHomePage() {
             <div className="h-px w-full max-w-sm bg-slate-200" />
 
             <Image
-              src="/grapple-hub-logo.jpeg"
+              src="/grapple-hub.jpg"
               alt="The Grapple Hub"
               width={220}
               height={220}
