@@ -44,6 +44,12 @@ type MemberDetail = {
 
   totalPrice?: number;
   paymentIntentId?: string;
+
+  trainingStartDate?: string | null;
+  bjjBelt?: string;
+  bjjStripes?: number;
+  lastGradingDate?: string | null;
+  gradingNotes?: string;
 };
 
 function toDateInput(value?: string) {
@@ -113,6 +119,7 @@ export default function EditMemberPage() {
   const { programmeId, programme } = useProgramme();
 
   const isBrawlers = programmeId === 'BRAWLERS_BOXING';
+  const isGrappleHub = programmeId === 'THE_GRAPPLE_HUB';
 
   const sessionOptions = isBrawlers
     ? [
@@ -192,6 +199,19 @@ export default function EditMemberPage() {
       paymentIntentId:
         String(form.get('paymentIntentId') || '').trim() ||
         'MANUAL_ADMIN_UPDATE',
+
+      ...(isGrappleHub
+        ? {
+            trainingStartDate: String(
+              form.get('trainingStartDate') || '',
+            ),
+            bjjBelt: String(form.get('bjjBelt') || 'WHITE'),
+            bjjStripes: Number(form.get('bjjStripes') || 0),
+            lastGradingDate:
+              String(form.get('lastGradingDate') || '') || undefined,
+            gradingNotes: String(form.get('gradingNotes') || '').trim(),
+          }
+        : {}),
     };
 
     try {
@@ -265,7 +285,9 @@ export default function EditMemberPage() {
             </h1>
 
             <p className="mt-1 text-sm text-slate-500">
-              Update child, guardian, medical, consent and payment details.
+              {isGrappleHub
+                ? 'Update child, guardian, medical, consent, BJJ development and payment details.'
+                : 'Update child, guardian, medical, consent and payment details.'}
             </p>
 
             {childFullName && (
@@ -376,6 +398,101 @@ export default function EditMemberPage() {
                 </div>
               </div>
             </SectionCard>
+
+            {isGrappleHub && (
+              <div id="bjj-development">
+                <SectionCard
+                  title="BJJ development"
+                  description="Manage the participant's Brazilian Jiu-Jitsu training history and current grade. Digitally recorded class attendance is calculated automatically from the attendance register."
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <FieldLabel required>BJJ training start date</FieldLabel>
+                      <input
+                        name="trainingStartDate"
+                        type="date"
+                        required
+                        defaultValue={toDateInput(
+                          member.trainingStartDate || undefined,
+                        )}
+                        className={inputClassName}
+                      />
+                      <p className="mt-1.5 text-xs leading-5 text-slate-400">
+                        Use the date the participant first started Brazilian
+                        Jiu-Jitsu. An approximate date can be used if the exact
+                        date is unknown.
+                      </p>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Current youth belt</FieldLabel>
+                      <select
+                        name="bjjBelt"
+                        defaultValue={member.bjjBelt || 'WHITE'}
+                        className={inputClassName}
+                      >
+                        <option value="WHITE">White</option>
+                        <option value="GREY_WHITE">Grey / White</option>
+                        <option value="GREY">Grey</option>
+                        <option value="GREY_BLACK">Grey / Black</option>
+                        <option value="YELLOW_WHITE">Yellow / White</option>
+                        <option value="YELLOW">Yellow</option>
+                        <option value="YELLOW_BLACK">Yellow / Black</option>
+                        <option value="ORANGE_WHITE">Orange / White</option>
+                        <option value="ORANGE">Orange</option>
+                        <option value="ORANGE_BLACK">Orange / Black</option>
+                        <option value="GREEN_WHITE">Green / White</option>
+                        <option value="GREEN">Green</option>
+                        <option value="GREEN_BLACK">Green / Black</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Current stripes</FieldLabel>
+                      <select
+                        name="bjjStripes"
+                        defaultValue={String(member.bjjStripes ?? 0)}
+                        className={inputClassName}
+                      >
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <FieldLabel>Last grading date</FieldLabel>
+                      <input
+                        name="lastGradingDate"
+                        type="date"
+                        defaultValue={toDateInput(
+                          member.lastGradingDate || undefined,
+                        )}
+                        className={inputClassName}
+                      />
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <FieldLabel>Grading notes</FieldLabel>
+                      <textarea
+                        name="gradingNotes"
+                        defaultValue={member.gradingNotes || ''}
+                        placeholder="Optional coach notes about the participant's current development, grading or areas to focus on."
+                        className={textareaClassName}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-700">
+                    Class attendance is not edited here. It is calculated from
+                    The Grapple Hub attendance register so the register remains
+                    the source of truth.
+                  </div>
+                </SectionCard>
+              </div>
+            )}
 
             <SectionCard
               title="Guardian details"

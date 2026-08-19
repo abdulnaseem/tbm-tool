@@ -37,8 +37,32 @@ type MemberDetail = {
   consentPhotography?: boolean;
   consentData?: boolean;
   consentSafeguarding?: boolean;
+
+  trainingStartDate?: string | null;
+  bjjBelt?: string;
+  bjjStripes?: number;
+  lastGradingDate?: string | null;
+  gradingNotes?: string;
+
   createdAt?: string;
   updatedAt?: string;
+};
+
+type BjjProgress = {
+  memberId: string;
+  childName: string;
+  trainingStartDate: string | null;
+  monthsTraining: number;
+  currentBelt: string;
+  stripes: number;
+  lastGradingDate: string | null;
+  gradingNotes: string;
+  recordedClasses: number;
+  recordedAbsences: number;
+  totalRecordedRegisters: number;
+  attendanceRate: number;
+  firstRecordedClass: string | null;
+  latestRecordedClass: string | null;
 };
 
 type Payment = {
@@ -77,6 +101,49 @@ function formatDate(value?: string) {
   });
 }
 
+function formatLongDate(value?: string | null) {
+  if (!value) return '-';
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return '-';
+
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+function formatTrainingDuration(months?: number) {
+  if (!months || months <= 0) return 'Less than 1 month';
+
+  const years = Math.floor(months / 12);
+  const remainingMonths = months % 12;
+
+  if (years === 0) {
+    return `${remainingMonths} month${remainingMonths === 1 ? '' : 's'}`;
+  }
+
+  if (remainingMonths === 0) {
+    return `${years} year${years === 1 ? '' : 's'}`;
+  }
+
+  return `${years} year${years === 1 ? '' : 's'} ${remainingMonths} month${
+    remainingMonths === 1 ? '' : 's'
+  }`;
+}
+
+function formatBelt(value?: string | null) {
+  if (!value) return 'White';
+
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' / ');
+}
+
 function getFullName(...parts: (string | undefined)[]) {
   return parts.filter(Boolean).join(' ');
 }
@@ -96,6 +163,32 @@ function DetailRow({
       <dd className="break-words text-sm font-medium text-slate-900 sm:text-right">
         {value || '-'}
       </dd>
+    </div>
+  );
+}
+
+function BjjMetric({
+  label,
+  value,
+  supportingText,
+}: {
+  label: string;
+  value: string | number;
+  supportingText?: string;
+}) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+        {label}
+      </p>
+      <p className="mt-2 break-words text-base font-semibold text-slate-900">
+        {value}
+      </p>
+      {supportingText && (
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          {supportingText}
+        </p>
+      )}
     </div>
   );
 }
@@ -137,6 +230,8 @@ export default function MemberDetailPage() {
 
   const [member, setMember] = useState<MemberDetail | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [bjjProgress, setBjjProgress] = useState<BjjProgress | null>(null);
+  const [bjjProgressError, setBjjProgressError] = useState(false);
   const [loading, setLoading] = useState(true);
   const [paymentSaving, setPaymentSaving] = useState(false);
 
@@ -160,23 +255,38 @@ export default function MemberDetailPage() {
     if (!memberId) return;
 
     setLoading(true);
+    setBjjProgressError(false);
 
     try {
-      const [memberData, paymentData] = await Promise.all([
+      const progressRequest =
+        programmeId === 'THE_GRAPPLE_HUB'
+          ? apiFetch<BjjProgress>(
+              withProgramme(`/members/${memberId}/bjj-progress`, programmeId),
+            ).catch((err) => {
+              console.error('Failed to fetch BJJ progress:', err);
+              setBjjProgressError(true);
+              return null;
+            })
+          : Promise.resolve(null);
+
+      const [memberData, paymentData, progressData] = await Promise.all([
         apiFetch<MemberDetail>(
           withProgramme(`/members/${memberId}`, programmeId),
         ),
         apiFetch<Payment[]>(
           withProgramme(`/payments/member/${memberId}`, programmeId),
         ),
+        progressRequest,
       ]);
 
       setMember(memberData);
       setPayments(paymentData);
+      setBjjProgress(progressData);
     } catch (err) {
       console.error('Failed to fetch member/payment data:', err);
       setMember(null);
       setPayments([]);
+      setBjjProgress(null);
     } finally {
       setLoading(false);
     }
@@ -335,7 +445,14 @@ export default function MemberDetailPage() {
 
   const disciplines = member.disciplines || [];
   const session = member.session || 'UNKNOWN';
-  const displayedStatus = activePayment ? 'ACTIVE' : 'EXPIRED';
+  const displayedStatus =
+    programmeId === 'BRAWLERS_BOXING'
+      ? activePayment
+        ? 'ACTIVE'
+        : 'EXPIRED'
+      : member.membershipStatus === 'ACTIVE'
+        ? 'ACTIVE'
+        : 'EXPIRED';
 
   return (
     <Protected roles={['COACH', 'ADMIN', 'SUPER_ADMIN']}>
@@ -498,6 +615,130 @@ export default function MemberDetailPage() {
               </dl>
             </section>
           </div>
+
+          {programmeId === 'THE_GRAPPLE_HUB' && (
+            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-600">
+                    Brazilian Jiu-Jitsu
+                  </p>
+                  <h2 className="mt-1 text-lg font-semibold text-slate-900">
+                    BJJ Development
+                  </h2>
+                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
+                    Training history and digitally recorded attendance to support
+                    future grading reviews. Belt promotions remain a coaching decision.
+                  </p>
+                </div>
+
+                {canManageMembers && (
+                  <Link
+                    href={`/members/${memberId}/edit#bjj-development`}
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
+                  >
+                    Manage grading
+                  </Link>
+                )}
+              </div>
+
+              {bjjProgressError ? (
+                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  BJJ progression information could not be loaded. The member
+                  profile is still available.
+                </div>
+              ) : (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <BjjMetric
+                    label="Current grade"
+                    value={`${formatBelt(
+                      bjjProgress?.currentBelt || member.bjjBelt || 'WHITE',
+                    )} Belt · ${
+                      bjjProgress?.stripes ?? member.bjjStripes ?? 0
+                    } Stripe${
+                      (bjjProgress?.stripes ?? member.bjjStripes ?? 0) === 1
+                        ? ''
+                        : 's'
+                    }`}
+                  />
+
+                  <BjjMetric
+                    label="Training since"
+                    value={formatLongDate(
+                      bjjProgress?.trainingStartDate ||
+                        member.trainingStartDate ||
+                        null,
+                    )}
+                    supportingText={
+                      bjjProgress
+                        ? formatTrainingDuration(bjjProgress.monthsTraining)
+                        : undefined
+                    }
+                  />
+
+                  <BjjMetric
+                    label="Digitally recorded classes"
+                    value={bjjProgress?.recordedClasses ?? 0}
+                    supportingText={
+                      bjjProgress
+                        ? `${bjjProgress.totalRecordedRegisters} register${
+                            bjjProgress.totalRecordedRegisters === 1 ? '' : 's'
+                          } recorded`
+                        : 'Attendance records begin from the digital register'
+                    }
+                  />
+
+                  <BjjMetric
+                    label="Recorded attendance"
+                    value={
+                      bjjProgress
+                        ? `${bjjProgress.attendanceRate}%`
+                        : '-'
+                    }
+                    supportingText={
+                      bjjProgress
+                        ? `${bjjProgress.recordedAbsences} recorded absence${
+                            bjjProgress.recordedAbsences === 1 ? '' : 's'
+                          }`
+                        : undefined
+                    }
+                  />
+
+                  <BjjMetric
+                    label="Last grading"
+                    value={formatLongDate(
+                      bjjProgress?.lastGradingDate ||
+                        member.lastGradingDate ||
+                        null,
+                    )}
+                  />
+
+                  <BjjMetric
+                    label="First recorded class"
+                    value={formatLongDate(
+                      bjjProgress?.firstRecordedClass || null,
+                    )}
+                  />
+
+                  <BjjMetric
+                    label="Latest recorded class"
+                    value={formatLongDate(
+                      bjjProgress?.latestRecordedClass || null,
+                    )}
+                  />
+
+                  <BjjMetric
+                    label="Grading notes"
+                    value={
+                      bjjProgress?.gradingNotes ||
+                      member.gradingNotes ||
+                      'No grading notes recorded'
+                    }
+                  />
+                </div>
+              )}
+            </section>
+          )}
 
           <div className="grid gap-4 xl:grid-cols-3">
             {/* Payment Form */}
