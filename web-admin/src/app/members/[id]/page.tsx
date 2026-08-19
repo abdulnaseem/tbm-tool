@@ -167,21 +167,115 @@ function DetailRow({
   );
 }
 
+function getInitials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+
+  if (parts.length === 0) return '?';
+
+  return parts
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
+}
+
+function getBeltBackground(belt?: string | null) {
+  switch (belt) {
+    case 'GREY_WHITE':
+      return 'linear-gradient(90deg, #ffffff 0 24%, #9ca3af 24% 76%, #ffffff 76% 100%)';
+    case 'GREY':
+      return '#9ca3af';
+    case 'GREY_BLACK':
+      return 'linear-gradient(90deg, #111827 0 24%, #9ca3af 24% 76%, #111827 76% 100%)';
+    case 'YELLOW_WHITE':
+      return 'linear-gradient(90deg, #ffffff 0 24%, #facc15 24% 76%, #ffffff 76% 100%)';
+    case 'YELLOW':
+      return '#facc15';
+    case 'YELLOW_BLACK':
+      return 'linear-gradient(90deg, #111827 0 24%, #facc15 24% 76%, #111827 76% 100%)';
+    case 'ORANGE_WHITE':
+      return 'linear-gradient(90deg, #ffffff 0 24%, #f97316 24% 76%, #ffffff 76% 100%)';
+    case 'ORANGE':
+      return '#f97316';
+    case 'ORANGE_BLACK':
+      return 'linear-gradient(90deg, #111827 0 24%, #f97316 24% 76%, #111827 76% 100%)';
+    case 'GREEN_WHITE':
+      return 'linear-gradient(90deg, #ffffff 0 24%, #16a34a 24% 76%, #ffffff 76% 100%)';
+    case 'GREEN':
+      return '#16a34a';
+    case 'GREEN_BLACK':
+      return 'linear-gradient(90deg, #111827 0 24%, #16a34a 24% 76%, #111827 76% 100%)';
+    case 'WHITE':
+    default:
+      return '#ffffff';
+  }
+}
+
+function BeltVisual({
+  belt,
+  stripes,
+  compact = false,
+}: {
+  belt?: string | null;
+  stripes?: number | null;
+  compact?: boolean;
+}) {
+  const safeStripes = Math.min(Math.max(stripes ?? 0, 0), 4);
+  const beltLabel = `${formatBelt(belt || 'WHITE')} Belt`;
+  const stripeLabel = `${safeStripes} stripe${safeStripes === 1 ? '' : 's'}`;
+
+  return (
+    <div
+      className={compact ? 'w-full max-w-[230px]' : 'w-full max-w-md'}
+      aria-label={`${beltLabel}, ${stripeLabel}`}
+      role="img"
+    >
+      <div
+        className={`relative overflow-hidden rounded-lg border border-slate-300 shadow-sm ${
+          compact ? 'h-9' : 'h-14'
+        }`}
+        style={{ background: getBeltBackground(belt) }}
+      >
+        <div className="absolute inset-y-0 right-[10%] w-[27%] bg-slate-950">
+          <div className="flex h-full items-center justify-center gap-1.5 px-2">
+            {Array.from({ length: safeStripes }).map((_, index) => (
+              <span
+                key={index}
+                className={`block rounded-full bg-white ${
+                  compact ? 'h-5 w-1' : 'h-8 w-1.5'
+                }`}
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BjjMetric({
   label,
   value,
   supportingText,
+  emphasized = false,
 }: {
   label: string;
   value: string | number;
   supportingText?: string;
+  emphasized?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+    <div
+      className={`rounded-2xl border p-4 ${
+        emphasized
+          ? 'border-brand-200 bg-brand-50/60'
+          : 'border-slate-100 bg-slate-50'
+      }`}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-400">
         {label}
       </p>
-      <p className="mt-2 break-words text-base font-semibold text-slate-900">
+      <p className="mt-2 break-words text-lg font-bold text-slate-900">
         {value}
       </p>
       {supportingText && (
@@ -454,54 +548,334 @@ export default function MemberDetailPage() {
         ? 'ACTIVE'
         : 'EXPIRED';
 
+  const isGrappleHub = programmeId === 'THE_GRAPPLE_HUB';
+  const currentBelt =
+    bjjProgress?.currentBelt || member.bjjBelt || 'WHITE';
+  const currentStripes =
+    bjjProgress?.stripes ?? member.bjjStripes ?? 0;
+
+  const hasMedicalAlert =
+    Boolean(member.allergies?.trim()) ||
+    Boolean(member.medicalConditions?.trim()) ||
+    Boolean(member.medications?.trim()) ||
+    Boolean(member.safeguardingNotes?.trim());
+
   return (
     <Protected roles={['COACH', 'ADMIN', 'SUPER_ADMIN']}>
       <Shell>
         <div className="space-y-5 pb-24 sm:pb-0">
-          <div className="flex flex-col gap-4 rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
+          {/* PROFILE SUMMARY */}
+          <section className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft">
+            <div className="p-4 sm:p-5 lg:p-6">
               <Link
                 href="/members"
-                className="mb-3 inline-flex text-xs font-semibold text-brand-600 hover:text-brand-700"
+                className="mb-4 inline-flex text-xs font-semibold text-brand-600 transition hover:text-brand-700"
               >
                 ← Back to members
               </Link>
 
-              <h1 className="break-words text-xl font-semibold text-slate-900 sm:text-2xl">
-                {childFullName || 'Unnamed member'}
-              </h1>
-              <p className="mt-1 text-xs font-medium text-slate-500">
-                {programme.name}
-              </p>
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex min-w-0 items-start gap-4">
+                  <div
+                    className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-xl font-bold text-white shadow-sm sm:h-20 sm:w-20 sm:text-2xl"
+                    aria-label={`${childFullName || 'Member'} avatar`}
+                  >
+                    {getInitials(childFullName || 'Member')}
+                  </div>
 
-              <div className="mt-3 flex flex-wrap gap-2">
-                {disciplines.length > 0 ? (
-                  disciplines.map((discipline) => (
-                    <span
-                      key={discipline}
-                      className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600"
-                    >
-                      {discipline}
-                    </span>
-                  ))
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500">
-                    No discipline
-                  </span>
+                  <div className="min-w-0 pt-0.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h1 className="break-words text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+                        {childFullName || 'Unnamed member'}
+                      </h1>
+                      <StatusBadge status={displayedStatus} />
+                    </div>
+
+                    <p className="mt-1 text-sm font-medium text-slate-500">
+                      {programme.name}
+                    </p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {disciplines.map((discipline) => (
+                        <span
+                          key={discipline}
+                          className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600"
+                        >
+                          {discipline}
+                        </span>
+                      ))}
+
+                      <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
+                        {session}
+                      </span>
+
+                      {isGrappleHub && (
+                        <span
+                          className="inline-flex items-center rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                          aria-label={`Current BJJ rank: ${formatBelt(
+                            currentBelt,
+                          )} Belt, ${currentStripes} stripe${
+                            currentStripes === 1 ? '' : 's'
+                          }`}
+                        >
+                          {formatBelt(currentBelt)} Belt · {currentStripes}{' '}
+                          Stripe{currentStripes === 1 ? '' : 's'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {isGrappleHub && (
+                  <div className="w-full rounded-2xl border border-slate-100 bg-slate-50 p-4 lg:w-[330px]">
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                          Current BJJ rank
+                        </p>
+                        <p className="mt-1 text-base font-bold text-slate-900">
+                          {formatBelt(currentBelt)} Belt
+                        </p>
+                        <p className="text-sm font-medium text-slate-500">
+                          {currentStripes} stripe{currentStripes === 1 ? '' : 's'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3">
+                      <BeltVisual
+                        belt={currentBelt}
+                        stripes={currentStripes}
+                        compact
+                      />
+                    </div>
+                  </div>
                 )}
-
-                <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-                  {session}
-                </span>
               </div>
             </div>
+          </section>
 
-            <StatusBadge status={displayedStatus} />
+          {/* GRAPPLE HUB: COACHING INFORMATION FIRST */}
+          {isGrappleHub && (
+            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 lg:p-6">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-brand-600">
+                    Brazilian Jiu-Jitsu
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-slate-900">
+                    Development & grading
+                  </h2>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                    Current rank, training history and digitally recorded
+                    attendance for coaching and grading reviews.
+                  </p>
+                </div>
+
+                {canManageMembers && (
+                  <Link
+                    href={`/members/${memberId}/edit#bjj-development`}
+                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-300"
+                  >
+                    Manage grading
+                  </Link>
+                )}
+              </div>
+
+              {bjjProgressError ? (
+                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  BJJ progression information could not be loaded. The rest of
+                  the member profile is still available.
+                </div>
+              ) : (
+                <>
+                  <div className="mt-5 grid gap-4 lg:grid-cols-[1.15fr_1fr]">
+                    <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 text-white sm:p-6">
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/55">
+                        Current grade
+                      </p>
+
+                      <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-2xl font-bold">
+                            {formatBelt(currentBelt)} Belt
+                          </p>
+                          <p className="mt-1 text-sm text-white/65">
+                            {currentStripes} stripe
+                            {currentStripes === 1 ? '' : 's'}
+                          </p>
+                        </div>
+
+                        <div className="w-full sm:max-w-[300px]">
+                          <BeltVisual
+                            belt={currentBelt}
+                            stripes={currentStripes}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-5 grid grid-cols-2 gap-3 border-t border-white/10 pt-4">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/45">
+                            Training since
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-white">
+                            {formatLongDate(
+                              bjjProgress?.trainingStartDate ||
+                                member.trainingStartDate ||
+                                null,
+                            )}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-white/45">
+                            Time training
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-white">
+                            {bjjProgress
+                              ? formatTrainingDuration(bjjProgress.monthsTraining)
+                              : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <BjjMetric
+                        label="Classes attended"
+                        value={bjjProgress?.recordedClasses ?? 0}
+                        supportingText={
+                          bjjProgress
+                            ? `${bjjProgress.totalRecordedRegisters} digital register${
+                                bjjProgress.totalRecordedRegisters === 1
+                                  ? ''
+                                  : 's'
+                              }`
+                            : 'Digital attendance only'
+                        }
+                        emphasized
+                      />
+
+                      <BjjMetric
+                        label="Attendance"
+                        value={
+                          bjjProgress ? `${bjjProgress.attendanceRate}%` : '-'
+                        }
+                        supportingText={
+                          bjjProgress
+                            ? `${bjjProgress.recordedAbsences} recorded absence${
+                                bjjProgress.recordedAbsences === 1 ? '' : 's'
+                              }`
+                            : undefined
+                        }
+                      />
+
+                      <BjjMetric
+                        label="Last grading"
+                        value={formatLongDate(
+                          bjjProgress?.lastGradingDate ||
+                            member.lastGradingDate ||
+                            null,
+                        )}
+                        supportingText="Most recent recorded promotion"
+                      />
+
+                      <BjjMetric
+                        label="Latest class"
+                        value={formatLongDate(
+                          bjjProgress?.latestRecordedClass || null,
+                        )}
+                        supportingText={
+                          bjjProgress?.firstRecordedClass
+                            ? `Records since ${formatLongDate(
+                                bjjProgress.firstRecordedClass,
+                              )}`
+                            : 'No digital classes recorded yet'
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                          Grading notes
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-700">
+                          {bjjProgress?.gradingNotes ||
+                            member.gradingNotes ||
+                            'No grading notes recorded yet.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
+
+          {/* SAFETY / COACH-CRITICAL INFORMATION */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <section
+              className={`rounded-2xl border bg-white p-4 shadow-soft sm:p-5 lg:col-span-2 ${
+                hasMedicalAlert
+                  ? 'border-amber-200'
+                  : 'border-slate-100'
+              }`}
+            >
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-slate-900">
+                    Medical & safeguarding
+                  </h2>
+                  <p className="mt-0.5 text-xs text-slate-500">
+                    Check before training when relevant.
+                  </p>
+                </div>
+
+                {hasMedicalAlert && (
+                  <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-700">
+                    Information recorded
+                  </span>
+                )}
+              </div>
+
+              <dl className="text-sm">
+                <DetailRow label="Allergies" value={member.allergies} />
+                <DetailRow
+                  label="Medical conditions"
+                  value={member.medicalConditions}
+                />
+                <DetailRow label="Medications" value={member.medications} />
+                <DetailRow
+                  label="Safeguarding notes"
+                  value={member.safeguardingNotes}
+                />
+              </dl>
+            </section>
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
+              <h2 className="text-sm font-semibold text-slate-900">
+                Emergency contact
+              </h2>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Primary contact in an emergency.
+              </p>
+
+              <dl className="mt-3 text-sm">
+                <DetailRow label="Name" value={member.emergencyContactName} />
+                <DetailRow label="Phone" value={member.emergencyContactPhone} />
+              </dl>
+            </section>
           </div>
+
+          {/* MEMBER / GUARDIAN DETAILS */}
           <div className="grid gap-4 lg:grid-cols-3">
             <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 lg:col-span-2">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Child details
+                Participant details
               </h2>
 
               <dl className="text-sm">
@@ -521,12 +895,45 @@ export default function MemberDetailPage() {
 
             <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Current payment status
+                Parent / guardian
+              </h2>
+
+              <dl className="text-sm">
+                <DetailRow label="Name" value={guardianFullName} />
+                <DetailRow label="Relationship" value={member.relationship} />
+                <DetailRow label="Email" value={member.email} />
+              </dl>
+            </section>
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
+              <h2 className="mb-3 text-sm font-semibold text-slate-900">
+                Consents
               </h2>
 
               <dl className="text-sm">
                 <DetailRow
-                  label="Status"
+                  label="Photography"
+                  value={formatBoolean(member.consentPhotography)}
+                />
+                <DetailRow
+                  label="Data"
+                  value={formatBoolean(member.consentData)}
+                />
+                <DetailRow
+                  label="Safeguarding"
+                  value={formatBoolean(member.consentSafeguarding)}
+                />
+              </dl>
+            </section>
+
+            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 lg:col-span-2">
+              <h2 className="mb-3 text-sm font-semibold text-slate-900">
+                Membership & payment status
+              </h2>
+
+              <dl className="text-sm">
+                <DetailRow
+                  label="Payment status"
                   value={activePayment ? 'Paid / Active' : 'No active payment'}
                 />
                 <DetailRow
@@ -551,194 +958,7 @@ export default function MemberDetailPage() {
                 />
               </dl>
             </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Guardian
-              </h2>
-
-              <dl className="text-sm">
-                <DetailRow label="Name" value={guardianFullName} />
-                <DetailRow label="Relationship" value={member.relationship} />
-                <DetailRow label="Email" value={member.email} />
-              </dl>
-            </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Emergency contact
-              </h2>
-
-              <dl className="text-sm">
-                <DetailRow label="Name" value={member.emergencyContactName} />
-                <DetailRow label="Phone" value={member.emergencyContactPhone} />
-              </dl>
-            </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5 lg:col-span-2">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Medical information
-              </h2>
-
-              <dl className="text-sm">
-                <DetailRow label="Allergies" value={member.allergies} />
-                <DetailRow
-                  label="Medical conditions"
-                  value={member.medicalConditions}
-                />
-                <DetailRow label="Medications" value={member.medications} />
-                <DetailRow
-                  label="Safeguarding notes"
-                  value={member.safeguardingNotes}
-                />
-              </dl>
-            </section>
-
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900">
-                Consents
-              </h2>
-
-              <dl className="text-sm">
-                <DetailRow
-                  label="Photography"
-                  value={formatBoolean(member.consentPhotography)}
-                />
-                <DetailRow
-                  label="Data"
-                  value={formatBoolean(member.consentData)}
-                />
-                <DetailRow
-                  label="Safeguarding"
-                  value={formatBoolean(member.consentSafeguarding)}
-                />
-              </dl>
-            </section>
           </div>
-
-          {programmeId === 'THE_GRAPPLE_HUB' && (
-            <section className="rounded-2xl border border-slate-100 bg-white p-4 shadow-soft sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-brand-600">
-                    Brazilian Jiu-Jitsu
-                  </p>
-                  <h2 className="mt-1 text-lg font-semibold text-slate-900">
-                    BJJ Development
-                  </h2>
-                  <p className="mt-1 max-w-2xl text-xs leading-5 text-slate-500">
-                    Training history and digitally recorded attendance to support
-                    future grading reviews. Belt promotions remain a coaching decision.
-                  </p>
-                </div>
-
-                {canManageMembers && (
-                  <Link
-                    href={`/members/${memberId}/edit#bjj-development`}
-                    className="inline-flex shrink-0 items-center justify-center rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-brand-700"
-                  >
-                    Manage grading
-                  </Link>
-                )}
-              </div>
-
-              {bjjProgressError ? (
-                <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  BJJ progression information could not be loaded. The member
-                  profile is still available.
-                </div>
-              ) : (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <BjjMetric
-                    label="Current grade"
-                    value={`${formatBelt(
-                      bjjProgress?.currentBelt || member.bjjBelt || 'WHITE',
-                    )} Belt · ${
-                      bjjProgress?.stripes ?? member.bjjStripes ?? 0
-                    } Stripe${
-                      (bjjProgress?.stripes ?? member.bjjStripes ?? 0) === 1
-                        ? ''
-                        : 's'
-                    }`}
-                  />
-
-                  <BjjMetric
-                    label="Training since"
-                    value={formatLongDate(
-                      bjjProgress?.trainingStartDate ||
-                        member.trainingStartDate ||
-                        null,
-                    )}
-                    supportingText={
-                      bjjProgress
-                        ? formatTrainingDuration(bjjProgress.monthsTraining)
-                        : undefined
-                    }
-                  />
-
-                  <BjjMetric
-                    label="Digitally recorded classes"
-                    value={bjjProgress?.recordedClasses ?? 0}
-                    supportingText={
-                      bjjProgress
-                        ? `${bjjProgress.totalRecordedRegisters} register${
-                            bjjProgress.totalRecordedRegisters === 1 ? '' : 's'
-                          } recorded`
-                        : 'Attendance records begin from the digital register'
-                    }
-                  />
-
-                  <BjjMetric
-                    label="Recorded attendance"
-                    value={
-                      bjjProgress
-                        ? `${bjjProgress.attendanceRate}%`
-                        : '-'
-                    }
-                    supportingText={
-                      bjjProgress
-                        ? `${bjjProgress.recordedAbsences} recorded absence${
-                            bjjProgress.recordedAbsences === 1 ? '' : 's'
-                          }`
-                        : undefined
-                    }
-                  />
-
-                  <BjjMetric
-                    label="Last grading"
-                    value={formatLongDate(
-                      bjjProgress?.lastGradingDate ||
-                        member.lastGradingDate ||
-                        null,
-                    )}
-                  />
-
-                  <BjjMetric
-                    label="First recorded class"
-                    value={formatLongDate(
-                      bjjProgress?.firstRecordedClass || null,
-                    )}
-                  />
-
-                  <BjjMetric
-                    label="Latest recorded class"
-                    value={formatLongDate(
-                      bjjProgress?.latestRecordedClass || null,
-                    )}
-                  />
-
-                  <BjjMetric
-                    label="Grading notes"
-                    value={
-                      bjjProgress?.gradingNotes ||
-                      member.gradingNotes ||
-                      'No grading notes recorded'
-                    }
-                  />
-                </div>
-              )}
-            </section>
-          )}
 
           <div className="grid gap-4 xl:grid-cols-3">
             {/* Payment Form */}
