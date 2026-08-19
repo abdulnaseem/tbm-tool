@@ -137,6 +137,7 @@ export class PaymentsService {
           paidAt: payment.createdAt.toISOString(),
           periodStart: payment.periodStart.toISOString(),
           periodEnd: payment.periodEnd.toISOString(),
+          programmeId
         });
       } catch (error) {
         console.error('Payment receipt email failed:', error);

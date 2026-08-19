@@ -1,198 +1,567 @@
 // backend/src/mail/mail.service.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Resend } from 'resend';
 
+type ProgrammeId =
+  | 'BRAWLERS_BOXING'
+  | 'THE_GRAPPLE_HUB';
+
 @Injectable()
 export class MailService {
-  private readonly logger = new Logger(MailService.name);
+  private readonly logger =
+    new Logger(MailService.name);
+
   private readonly resend: Resend;
 
-  constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('RESEND_API_KEY');
+  constructor(
+    private readonly configService:
+      ConfigService,
+  ) {
+    const apiKey =
+      this.configService.get<string>(
+        'RESEND_API_KEY',
+      );
 
     if (!apiKey) {
-      this.logger.warn('RESEND_API_KEY is not configured.');
+      this.logger.warn(
+        'RESEND_API_KEY is not configured.',
+      );
     }
 
-    this.resend = new Resend(apiKey);
+    this.resend =
+      new Resend(apiKey);
+  }
+
+  private getProgrammeDetails(
+    programmeId: ProgrammeId,
+  ) {
+    if (
+      programmeId ===
+      'THE_GRAPPLE_HUB'
+    ) {
+      return {
+        name:
+          'The Grapple Hub',
+
+        signupSubject:
+          'Welcome to The Butterfly Movement • The Grapple Hub',
+
+        receiptSubject:
+          'Payment Receipt | The Grapple Hub',
+
+        programmeLabel:
+          'The Grapple Hub Programme',
+
+        footerProgramme:
+          'The Grapple Hub',
+
+        colour:
+          '#15803d',
+
+        signupInfo: `
+          <h3 style="margin-top:30px;">
+            Programme Information
+          </h3>
+
+          <div style="
+            background:#f8fafc;
+            border:1px solid #e2e8f0;
+            border-radius:12px;
+            padding:20px;
+          ">
+            <p style="margin:0 0 12px 0;">
+              <strong>Programme</strong><br/>
+              Youth Brazilian Jiu-Jitsu
+            </p>
+
+            <p style="margin:0 0 12px 0;">
+              <strong>Organisation</strong><br/>
+              The Grapple Hub
+            </p>
+
+            <p style="margin:0;">
+              <strong>Delivered by</strong><br/>
+              The Butterfly Movement
+            </p>
+          </div>
+        `,
+      };
+    }
+
+    return {
+      name:
+        'Brawlers Boxing',
+
+      signupSubject:
+        'Welcome to The Butterfly Movement • Brawlers Boxing',
+
+      receiptSubject:
+        'Payment Receipt | Brawlers Boxing',
+
+      programmeLabel:
+        'Brawlers Boxing Programme',
+
+      footerProgramme:
+        'Brawlers Boxing Programme',
+
+      colour:
+        '#15803d',
+
+      signupInfo: `
+        <h3 style="margin-top:30px;">
+          Programme Information
+        </h3>
+
+        <div style="
+          background:#f8fafc;
+          border:1px solid #e2e8f0;
+          border-radius:12px;
+          padding:20px;
+        ">
+          <p style="margin:0 0 12px 0;">
+            <strong>Summer Term 2026</strong><br/>
+            Saturday 4th July 2026 -
+            Saturday 26th September 2026
+          </p>
+
+          <p style="margin:0 0 12px 0;">
+            <strong>Training Day</strong><br/>
+            Every Saturday
+          </p>
+
+          <p style="margin:0 0 12px 0;">
+            <strong>Cubs (5-10 years)</strong><br/>
+            12:45pm - 1:45pm
+          </p>
+
+          <p style="margin:0 0 12px 0;">
+            <strong>Tigers (11-17 years)</strong><br/>
+            1:45pm - 2:45pm
+          </p>
+
+          <p style="margin:0;">
+            <strong>Location</strong><br/>
+            Osmani Trust<br/>
+            58 Underwood Road<br/>
+            London E1 5AW
+          </p>
+        </div>
+      `,
+    };
   }
 
   async sendSignupConfirmation(data: {
     to: string;
+
     guardianName: string;
+
     childName: string;
+
     session: string;
+
+    programmeId:
+      ProgrammeId;
   }) {
-    if (!data.to) return;
+    if (!data.to) {
+      return;
+    }
 
     const from =
-      this.configService.get<string>('MAIL_FROM') ||
+      this.configService.get<string>(
+        'MAIL_FROM',
+      ) ||
       'The Butterfly Movement <info@thebutterflymovement.health>';
 
-    const result = await this.resend.emails.send({
-      from,
-      to: data.to,
-      subject: 'Welcome to The Butterfly Movement • Brawlers Boxing',
-      html: `
-        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 700px; margin: 0 auto; color: #0f172a; line-height: 1.7;">
-          <div style="text-align:center; padding:20px 0;">
-            <h1 style="margin:0; color:#15803d;">Registration Received</h1>
-            <p style="margin-top:8px; color:#64748b;">
-              Brawlers Boxing Programme<br/>
-              The Butterfly Movement
+    const programme =
+      this.getProgrammeDetails(
+        data.programmeId,
+      );
+
+    const result =
+      await this.resend.emails.send({
+        from,
+
+        to:
+          data.to,
+
+        subject:
+          programme.signupSubject,
+
+        html: `
+          <div style="
+            font-family: Arial, Helvetica, sans-serif;
+            max-width:700px;
+            margin:0 auto;
+            color:#0f172a;
+            line-height:1.7;
+          ">
+            <div style="
+              text-align:center;
+              padding:20px 0;
+            ">
+              <h1 style="
+                margin:0;
+                color:${programme.colour};
+              ">
+                Registration Received
+              </h1>
+
+              <p style="
+                margin-top:8px;
+                color:#64748b;
+              ">
+                ${programme.programmeLabel}
+                <br/>
+                The Butterfly Movement
+              </p>
+            </div>
+
+            <p>
+              Hi ${
+                data.guardianName ||
+                'there'
+              },
+            </p>
+
+            <p>
+              Thank you for submitting your
+              registration for the
+              <strong>
+                ${programme.programmeLabel}
+              </strong>,
+              delivered by
+              <strong>
+                The Butterfly Movement
+              </strong>.
+            </p>
+
+            <p>
+              We have successfully received
+              the registration for:
+            </p>
+
+            <div style="
+              background:#f8fafc;
+              border:1px solid #e2e8f0;
+              border-radius:12px;
+              padding:16px;
+              margin:20px 0;
+            ">
+              <strong>
+                Participant:
+              </strong>
+              ${data.childName}
+              <br/>
+
+              <strong>
+                Programme:
+              </strong>
+              ${programme.name}
+              <br/>
+
+              <strong>
+                Session:
+              </strong>
+              ${data.session}
+            </div>
+
+            ${programme.signupInfo}
+
+            ${
+              data.programmeId ===
+              'BRAWLERS_BOXING'
+                ? `
+                  <p>
+                    You're welcome to attend
+                    our next boxing session
+                    this coming Saturday at
+                    the Osmani Centre.
+                    Our coaching team will be
+                    there to welcome you and
+                    answer any questions you
+                    may have.
+                  </p>
+                `
+                : `
+                  <p>
+                    Your registration will help
+                    us keep accurate participant,
+                    emergency contact, medical
+                    and safeguarding information
+                    for the current Youth BJJ
+                    cohort.
+                  </p>
+                `
+            }
+
+            <p>
+              If you have any questions,
+              please reply to this email or
+              contact us at:
+              <br/>
+
+              <strong>
+                info@thebutterflymovement.health
+              </strong>
+            </p>
+
+            <hr style="
+              border:none;
+              border-top:1px solid #e2e8f0;
+              margin:30px 0;
+            " />
+
+            <p style="
+              font-size:14px;
+              color:#64748b;
+            ">
+              Kind regards,
+              <br/>
+
+              <strong>
+                The Butterfly Movement Team
+              </strong>
+              <br/>
+
+              ${programme.footerProgramme}
+              <br/>
+
+              info@thebutterflymovement.health
+              <br/>
+
+              www.thebutterflymovement.health
             </p>
           </div>
+        `,
+      });
 
-          <p>Hi ${data.guardianName || 'there'},</p>
+    this.logger.log(
+      `Signup confirmation email sent to ${data.to} for ${data.programmeId}`,
+    );
 
-          <p>
-            Thank you for submitting your registration for the
-            <strong>Brawlers Boxing Programme</strong>, delivered by
-            <strong>The Butterfly Movement</strong>.
-          </p>
-
-          <p>We have successfully received the registration for:</p>
-
-          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:20px 0;">
-            <strong>Participant:</strong> ${data.childName}<br/>
-            <strong>Programme:</strong> Brawlers Boxing<br/>
-            <strong>Session:</strong> ${data.session}
-          </div>
-
-          <h3 style="margin-top:30px;">Programme Information</h3>
-
-          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:20px;">
-            <p style="margin:0 0 12px 0;">
-              <strong>Summer Term 2026</strong><br/>
-              Saturday 4th July 2026 - Saturday 26th September 2026
-            </p>
-
-            <p style="margin:0 0 12px 0;">
-              <strong>Training Day</strong><br/>
-              Every Saturday
-            </p>
-
-            <p style="margin:0 0 12px 0;">
-              <strong>Cubs (5-10 years)</strong><br/>
-              12:45pm - 1:45pm
-            </p>
-
-            <p style="margin:0 0 12px 0;">
-              <strong>Tigers (11-17 years)</strong><br/>
-              1:45pm - 2:45pm
-            </p>
-
-            <p style="margin:0;">
-              <strong>Location</strong><br/>
-              Osmani Trust<br/>
-              58 Underwood Road<br/>
-              London E1 5AW
-            </p>
-          </div>
-
-          <p>
-            A member of <strong>The Butterfly Movement</strong> team will review your registration and contact you shortly regarding your place on the programme.
-          </p>
-
-          <p>
-            If you have any questions, please reply to this email or contact us at:
-            <br/>
-            <strong>info@thebutterflymovement.health</strong>
-          </p>
-
-          <hr style="border:none; border-top:1px solid #e2e8f0; margin:30px 0;" />
-
-          <p style="font-size:14px; color:#64748b;">
-            Kind regards,<br/>
-            <strong>The Butterfly Movement Team</strong><br/>
-            Brawlers Boxing Programme<br/>
-            info@thebutterflymovement.health<br/>
-            www.thebutterflymovement.health
-          </p>
-        </div>
-      `,
-    });
-
-    this.logger.log(`Signup confirmation email sent to ${data.to}`);
-    this.logger.log(JSON.stringify(result));
+    this.logger.log(
+      JSON.stringify(result),
+    );
   }
 
   async sendPaymentReceipt(data: {
     to: string;
+
     guardianName: string;
+
     childName: string;
+
     amount: number;
+
     paymentMethod: string;
+
     paidAt: string;
+
     periodStart: string;
+
     periodEnd: string;
+
+    programmeId:
+      ProgrammeId;
   }) {
-    if (!data.to) return;
-  
+    if (!data.to) {
+      return;
+    }
+
     const from =
-      this.configService.get<string>('MAIL_FROM') ||
+      this.configService.get<string>(
+        'MAIL_FROM',
+      ) ||
       'The Butterfly Movement <info@thebutterflymovement.health>';
-  
-    const formatLongUkDate = (value: string) => {
-      const date = new Date(value);
-  
-      if (Number.isNaN(date.getTime())) {
+
+    const formatLongUkDate = (
+      value: string,
+    ) => {
+      const date =
+        new Date(value);
+
+      if (
+        Number.isNaN(
+          date.getTime(),
+        )
+      ) {
         return value;
       }
-  
-      return date.toLocaleDateString('en-GB', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
+
+      return date.toLocaleDateString(
+        'en-GB',
+        {
+          weekday:
+            'long',
+
+          day:
+            'numeric',
+
+          month:
+            'long',
+
+          year:
+            'numeric',
+        },
+      );
     };
-  
-    const paymentDate = formatLongUkDate(data.paidAt);
-    const periodStart = formatLongUkDate(data.periodStart);
-    const periodEnd = formatLongUkDate(data.periodEnd);
-  
-    const result = await this.resend.emails.send({
-      from,
-      to: data.to,
-      subject: 'Payment Receipt | Brawlers Boxing',
-      html: `
-        <div style="font-family: Arial, Helvetica, sans-serif; max-width: 700px; margin: 0 auto; color: #0f172a; line-height: 1.7;">
-          <h1 style="color:#15803d;">Payment Receipt</h1>
-  
-          <p>Hi ${data.guardianName || 'there'},</p>
-  
-          <p>
-            Thank you. We have received your payment for the <strong>Brawlers Boxing</strong> Programme, delivered by <strong>The Butterfly Movement</strong>.
-          </p>
-  
-          <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin:20px 0;">
-            <strong>Participant:</strong> ${data.childName}<br/>
-            <strong>Programme:</strong> Brawlers Boxing<br/>
-            <strong>Amount paid:</strong> £${Number(data.amount).toFixed(2)}<br/>
-            <strong>Payment method:</strong> ${data.paymentMethod}<br/>
-            <strong>Payment date:</strong> ${paymentDate}<br/>
-            <strong>Payment covers:</strong> ${periodStart} to ${periodEnd}
+
+    const paymentDate =
+      formatLongUkDate(
+        data.paidAt,
+      );
+
+    const periodStart =
+      formatLongUkDate(
+        data.periodStart,
+      );
+
+    const periodEnd =
+      formatLongUkDate(
+        data.periodEnd,
+      );
+
+    const programme =
+      this.getProgrammeDetails(
+        data.programmeId,
+      );
+
+    const result =
+      await this.resend.emails.send({
+        from,
+
+        to:
+          data.to,
+
+        subject:
+          programme.receiptSubject,
+
+        html: `
+          <div style="
+            font-family: Arial, Helvetica, sans-serif;
+            max-width:700px;
+            margin:0 auto;
+            color:#0f172a;
+            line-height:1.7;
+          ">
+            <h1 style="
+              color:${programme.colour};
+            ">
+              Payment Receipt
+            </h1>
+
+            <p>
+              Hi ${
+                data.guardianName ||
+                'there'
+              },
+            </p>
+
+            <p>
+              Thank you.
+              We have received your payment
+              for the
+              <strong>
+                ${programme.name}
+              </strong>
+              programme, delivered by
+              <strong>
+                The Butterfly Movement
+              </strong>.
+            </p>
+
+            <div style="
+              background:#f8fafc;
+              border:1px solid #e2e8f0;
+              border-radius:12px;
+              padding:16px;
+              margin:20px 0;
+            ">
+              <strong>
+                Participant:
+              </strong>
+              ${data.childName}
+              <br/>
+
+              <strong>
+                Programme:
+              </strong>
+              ${programme.name}
+              <br/>
+
+              <strong>
+                Amount paid:
+              </strong>
+              £${Number(
+                data.amount,
+              ).toFixed(2)}
+              <br/>
+
+              <strong>
+                Payment method:
+              </strong>
+              ${data.paymentMethod}
+              <br/>
+
+              <strong>
+                Payment date:
+              </strong>
+              ${paymentDate}
+              <br/>
+
+              <strong>
+                Payment covers:
+              </strong>
+              ${periodStart}
+              to
+              ${periodEnd}
+            </div>
+
+            <p>
+              This payment covers the
+              ${programme.name}
+              programme period from
+              <strong>
+                ${periodStart}
+              </strong>
+              to
+              <strong>
+                ${periodEnd}
+              </strong>.
+            </p>
+
+            <p style="
+              font-size:14px;
+              color:#64748b;
+            ">
+              Kind regards,
+              <br/>
+
+              <strong>
+                The Butterfly Movement Team
+              </strong>
+              <br/>
+
+              ${programme.footerProgramme}
+              <br/>
+
+              info@thebutterflymovement.health
+              <br/>
+
+              www.thebutterflymovement.health
+            </p>
           </div>
-  
-          <p>
-            This payment covers the Brawlers Boxing programme period from
-            <strong>${periodStart}</strong> to <strong>${periodEnd}</strong>.
-          </p>
-  
-          <p style="font-size:14px; color:#64748b;">
-            Kind regards,<br/>
-            <strong>The Butterfly Movement Team</strong><br/>
-            Brawlers Boxing Programme<br/>
-            info@thebutterflymovement.health<br/>
-            www.thebutterflymovement.health
-          </p>
-        </div>
-      `,
-    });
-  
-    this.logger.log(`Payment receipt sent to ${data.to}`);
-    this.logger.log(JSON.stringify(result));
+        `,
+      });
+
+    this.logger.log(
+      `Payment receipt sent to ${data.to} for ${data.programmeId}`,
+    );
+
+    this.logger.log(
+      JSON.stringify(result),
+    );
   }
 }
