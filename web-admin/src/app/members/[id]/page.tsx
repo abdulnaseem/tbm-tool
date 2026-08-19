@@ -153,16 +153,17 @@ function DetailRow({
   value,
 }: {
   label: string;
-  value?: string | number | null;
+  value: React.ReactNode;
 }) {
   return (
-    <div className="grid grid-cols-1 gap-1 border-b border-slate-100 py-3 last:border-b-0 sm:grid-cols-[150px_1fr] sm:gap-4">
-      <dt className="text-xs font-medium uppercase tracking-wide text-slate-400 sm:text-sm sm:normal-case sm:tracking-normal">
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 py-3 last:border-b-0">
+      <span className="shrink-0 text-sm text-slate-400">
         {label}
-      </dt>
-      <dd className="break-words text-sm font-medium text-slate-900 sm:text-right">
+      </span>
+
+      <div className="min-w-0 break-all text-right text-sm font-medium text-slate-900">
         {value || '-'}
-      </dd>
+      </div>
     </div>
   );
 }
