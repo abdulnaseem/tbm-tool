@@ -1,20 +1,41 @@
-// backend/src/members/members.module.ts
 import { Module } from '@nestjs/common';
+
 import { MongooseModule } from '@nestjs/mongoose';
-import { MemberProfile, MemberProfileSchema } from './schemas/member-profile.schema';
+
+import {
+  MemberProfile,
+  MemberProfileSchema,
+} from './schemas/member-profile.schema';
+
 import { MembersService } from './members.service';
 import { MembersController } from './members.controller';
+
 import { PaymentsModule } from '../payments/payments.module';
+import { AttendanceModule } from '../attendance/attendance.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: MemberProfile.name, schema: MemberProfileSchema },
+      {
+        name: MemberProfile.name,
+        schema: MemberProfileSchema,
+      },
     ]),
+
     PaymentsModule,
+    AttendanceModule,
   ],
-  controllers: [MembersController],
-  providers: [MembersService],
-  exports: [MembersService],
+
+  controllers: [
+    MembersController,
+  ],
+
+  providers: [
+    MembersService,
+  ],
+
+  exports: [
+    MembersService,
+  ],
 })
 export class MembersModule {}

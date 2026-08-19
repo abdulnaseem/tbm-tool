@@ -31,6 +31,8 @@ type SignupForm = {
   childsGender: string;
   childDateOfBirth: string;
 
+  trainingStartDate: string;
+
   adultFirstName: string;
   adultLastName: string;
   adultDateOfBirth: string;
@@ -64,6 +66,8 @@ const initialForm: SignupForm = {
   childLastName: '',
   childsGender: '',
   childDateOfBirth: '',
+
+  trainingStartDate: '',
 
   adultFirstName: '',
   adultLastName: '',
@@ -145,6 +149,15 @@ export default function SignupWizard({
       if (!isRequired(form.childDateOfBirth)) {
         return 'Child date of birth is required.';
       }
+      if (
+        programme.id ===
+          'THE_GRAPPLE_HUB' &&
+        !isRequired(
+          form.trainingStartDate,
+        )
+      ) {
+        return 'Please enter the date the participant started Brazilian Jiu-Jitsu training.';
+      }
     }
 
     if (form.accountType === 'ADULT') {
@@ -222,6 +235,12 @@ export default function SignupWizard({
         ? form.childsGender
         : form.adultGender,
       childDateOfBirth: dob,
+
+      trainingStartDate:
+        programme.id ===
+        'THE_GRAPPLE_HUB'
+          ? form.trainingStartDate
+          : undefined,
 
       session,
       disciplines: [programme.discipline],
@@ -431,6 +450,24 @@ export default function SignupWizard({
                 value={form.childsGender}
                 onChange={(v) => update('childsGender', v)}
               />
+
+              {programme.id ===
+                'THE_GRAPPLE_HUB' && (
+                <Input
+                  label="BJJ training start date"
+                  type="date"
+                  value={
+                    form.trainingStartDate
+                  }
+                  onChange={(value) =>
+                    update(
+                      'trainingStartDate',
+                      value,
+                    )
+                  }
+                  helperText="Enter the date your child first started Brazilian Jiu-Jitsu training. If you do not know the exact date, please enter your best approximate date."                  required
+                />
+              )}
             </Section>
           </>
         ) : (
@@ -615,27 +652,45 @@ function Input({
   onChange,
   type = 'text',
   required,
+  helperText,
 }: {
   label: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange:
+    (value: string) => void;
   type?: string;
   required?: boolean;
+  helperText?: string;
 }) {
   return (
     <label className="block">
       <span className="text-sm font-semibold text-slate-900">
         {label}
-        {required && <span className="ml-1 text-red-600">*</span>}
+
+        {required && (
+          <span className="ml-1 text-red-600">
+            *
+          </span>
+        )}
       </span>
 
       <input
         type={type}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) =>
+          onChange(
+            e.target.value,
+          )
+        }
         className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 outline-none placeholder:text-slate-400 focus:border-green-700 sm:py-3.5"
         required={required}
       />
+
+      {helperText && (
+        <span className="mt-1.5 block text-xs leading-5 text-slate-500">
+          {helperText}
+        </span>
+      )}
     </label>
   );
 }

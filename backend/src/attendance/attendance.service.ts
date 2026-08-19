@@ -446,4 +446,54 @@ export class AttendanceService {
       totalUpdated: results.length,
     };
   }
+
+  async getMemberAttendanceSummary(
+    memberId: string,
+    gymId: 'BRAWLERS_BOXING' | 'THE_GRAPPLE_HUB',
+  ) {
+    const records = await this.attendanceModel
+      .find({
+        memberId,
+        gymId,
+      })
+      .sort({
+        date: 1,
+      })
+      .lean();
+  
+    const present = records.filter(
+      (record) => record.status === 'PRESENT',
+    ).length;
+  
+    const absent = records.filter(
+      (record) => record.status === 'ABSENT',
+    ).length;
+  
+    const total = records.length;
+  
+    const rate =
+      total > 0
+        ? Math.round((present / total) * 100)
+        : 0;
+  
+    return {
+      memberId,
+      gymId,
+  
+      total,
+      present,
+      absent,
+      rate,
+  
+      firstRecordedClass:
+        records.length > 0
+          ? records[0].date
+          : null,
+  
+      latestRecordedClass:
+        records.length > 0
+          ? records[records.length - 1].date
+          : null,
+    };
+  }
 }

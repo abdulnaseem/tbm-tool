@@ -1,5 +1,3 @@
-// backend/src/public/public.controller.ts
-
 import {
   Body,
   Controller,
@@ -9,35 +7,24 @@ import {
 import { MembersService } from '../members/members.service';
 import { RecaptchaService } from './recaptcha.service';
 import { MailService } from '../mail/mail.service';
-import { ProgrammeId } from '../common/enums/programme-id.enum';
 
 @Controller('public')
 export class PublicController {
   constructor(
-    private readonly membersService: MembersService,
-    private readonly recaptchaService: RecaptchaService,
-    private readonly mailService: MailService,
+    private readonly membersService:
+      MembersService,
+
+    private readonly recaptchaService:
+      RecaptchaService,
+
+    private readonly mailService:
+      MailService,
   ) {}
 
   @Post('signup/brawlers-boxing')
-  signupBrawlers(@Body() body: any) {
-    return this.createSignup(
-      body,
-      ProgrammeId.BRAWLERS_BOXING,
-    );
-  }
-
-  @Post('signup/the-grapple-hub')
-  signupGrappleHub(@Body() body: any) {
-    return this.createSignup(
-      body,
-      ProgrammeId.THE_GRAPPLE_HUB,
-    );
-  }
-
-  private async createSignup(
+  async brawlersSignup(
+    @Body()
     body: any,
-    programmeId: ProgrammeId,
   ) {
     await this.recaptchaService.verify(
       body.recaptchaToken,
@@ -45,52 +32,124 @@ export class PublicController {
 
     const {
       recaptchaToken,
-      gymId: ignoredGymId,
       ...signupData
     } = body;
 
-    const member = await this.membersService.create({
-      ...signupData,
-      gymId: programmeId,
+    const member =
+      await this.membersService.create(
+        {
+          ...signupData,
 
-      disciplines:
-        programmeId === ProgrammeId.BRAWLERS_BOXING
-          ? ['BOXING']
-          : ['BJJ'],
+          importSource:
+            'BRAWLERS_PUBLIC_SIGNUP',
 
-      importSource:
-        programmeId === ProgrammeId.BRAWLERS_BOXING
-          ? 'BRAWLERS_PUBLIC_SIGNUP'
-          : 'GRAPPLE_HUB_PUBLIC_SIGNUP',
+          paymentIntentId:
+            'PUBLIC_SIGNUP_PENDING_PAYMENT',
+        },
 
-      paymentIntentId:
-        'PUBLIC_SIGNUP_PENDING_PAYMENT',
-    });
+        'BRAWLERS_BOXING',
+      );
 
     try {
-      await this.mailService.sendSignupConfirmation({
-        to: signupData.email,
+      await this.mailService
+        .sendSignupConfirmation({
+          to:
+            signupData.email,
 
-        guardianName: [
-          signupData.guardianFirstName,
-          signupData.guardianLastName,
-        ]
-          .filter(Boolean)
-          .join(' '),
+          guardianName:
+            `${
+              signupData.guardianFirstName ||
+              ''
+            } ${
+              signupData.guardianLastName ||
+              ''
+            }`.trim(),
 
-        childName: [
-          signupData.childFirstName,
-          signupData.childLastName,
-        ]
-          .filter(Boolean)
-          .join(' '),
+          childName:
+            `${
+              signupData.childFirstName ||
+              ''
+            } ${
+              signupData.childLastName ||
+              ''
+            }`.trim(),
 
-        session: signupData.session || 'UNKNOWN',
-
-      });
+          session:
+            signupData.session ||
+            'UNKNOWN',
+        });
     } catch (error) {
       console.error(
-        `${programmeId} signup email failed:`,
+        'Brawlers signup email failed:',
+        error,
+      );
+    }
+
+    return member;
+  }
+
+  @Post('signup/the-grapple-hub')
+  async grappleHubSignup(
+    @Body()
+    body: any,
+  ) {
+    await this.recaptchaService.verify(
+      body.recaptchaToken,
+    );
+
+    const {
+      recaptchaToken,
+      ...signupData
+    } = body;
+
+    const member =
+      await this.membersService.create(
+        {
+          ...signupData,
+
+          importSource:
+            'GRAPPLE_HUB_PUBLIC_SIGNUP',
+
+          paymentIntentId:
+            'GRAPPLE_HUB_COHORT_REGISTRATION',
+
+          totalPrice:
+            0,
+        },
+
+        'THE_GRAPPLE_HUB',
+      );
+
+    try {
+      await this.mailService
+        .sendSignupConfirmation({
+          to:
+            signupData.email,
+
+          guardianName:
+            `${
+              signupData.guardianFirstName ||
+              ''
+            } ${
+              signupData.guardianLastName ||
+              ''
+            }`.trim(),
+
+          childName:
+            `${
+              signupData.childFirstName ||
+              ''
+            } ${
+              signupData.childLastName ||
+              ''
+            }`.trim(),
+
+          session:
+            'JUNIORS',
+        });
+    } catch (error) {
+      console.error(
+        'Grapple Hub signup email failed:',
         error,
       );
     }

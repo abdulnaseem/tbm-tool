@@ -1,30 +1,50 @@
-// backend/src/members/members.service.ts
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
-import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
 import {
+  BjjYouthBelt,
   MemberProfile,
   MemberProfileDocument,
+  ProgrammeId,
 } from './schemas/member-profile.schema';
 
 import { PaymentsService } from '../payments/payments.service';
-import { ProgrammeId } from '../common/enums/programme-id.enum';
+import { AttendanceService } from '../attendance/attendance.service';
 
 @Injectable()
 export class MembersService {
   constructor(
     @InjectModel(MemberProfile.name)
-    private readonly memberModel: Model<MemberProfileDocument>,
+    private readonly memberModel:
+      Model<MemberProfileDocument>,
 
-    private readonly paymentsService: PaymentsService,
+    private readonly paymentsService:
+      PaymentsService,
+
+    private readonly attendanceService:
+      AttendanceService,
   ) {}
 
-  async findAll(programmeId: ProgrammeId) {
+  async findAll(
+    programmeId?: ProgrammeId,
+  ) {
+    const filter = programmeId
+      ? {
+          gymId: programmeId,
+        }
+      : {};
+
     const members = await this.memberModel
-      .find({ gymId: programmeId })
-      .sort({ createdAt: -1 })
+      .find(filter)
+      .sort({
+        createdAt: -1,
+      })
       .lean();
 
     return Promise.all(
@@ -32,190 +52,551 @@ export class MembersService {
         const hasActivePayment =
           await this.paymentsService.hasActivePayment(
             String(member._id),
-            programmeId,
+            member.gymId,
           );
 
         return {
           ...member,
-          membershipStatus: hasActivePayment ? 'ACTIVE' : 'EXPIRED',
+
+          membershipStatus:
+            hasActivePayment
+              ? 'ACTIVE'
+              : 'EXPIRED',
         };
       }),
     );
   }
 
-  async findOne(id: string, programmeId: ProgrammeId) {
+  async findOne(id: string) {
     const member = await this.memberModel
-      .findOne({
-        _id: id,
-        gymId: programmeId,
-      })
+      .findById(id)
       .lean();
 
     if (!member) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException(
+        'Member not found',
+      );
     }
 
     return member;
   }
 
-  async create(data: any) {
-    const programmeId =
-      data.gymId === ProgrammeId.THE_GRAPPLE_HUB
-        ? ProgrammeId.THE_GRAPPLE_HUB
-        : ProgrammeId.BRAWLERS_BOXING;
-
+  async create(
+    data: any,
+    programmeId: ProgrammeId =
+      'BRAWLERS_BOXING',
+  ) {
     const dob = data.childDateOfBirth
       ? new Date(data.childDateOfBirth)
       : undefined;
 
-    const defaultDisciplines =
-      programmeId === ProgrammeId.THE_GRAPPLE_HUB
-        ? ['BJJ']
-        : ['BOXING'];
+    const trainingStartDate =
+      data.trainingStartDate
+        ? new Date(data.trainingStartDate)
+        : undefined;
 
-    const defaultPrice =
-      programmeId === ProgrammeId.THE_GRAPPLE_HUB ? 0 : 100;
+    if (
+      dob &&
+      Number.isNaN(dob.getTime())
+    ) {
+      throw new BadRequestException(
+        'Invalid date of birth',
+      );
+    }
 
-    const member = await this.memberModel.create({
-      gymId: programmeId,
+    if (
+      trainingStartDate &&
+      Number.isNaN(
+        trainingStartDate.getTime(),
+      )
+    ) {
+      throw new BadRequestException(
+        'Invalid BJJ training start date',
+      );
+    }
 
-      accountType: data.accountType || 'GUARDIAN',
+    const isGrappleHub =
+      programmeId ===
+      'THE_GRAPPLE_HUB';
 
-      guardianFirstName: data.guardianFirstName || '',
-      guardianMiddleName: data.guardianMiddleName || '',
-      guardianLastName: data.guardianLastName || '',
-      email: String(data.email || '').trim().toLowerCase(),
-      relationship: data.relationship || 'Parent/Guardian',
+    if (
+      isGrappleHub &&
+      !trainingStartDate
+    ) {
+      throw new BadRequestException(
+        'BJJ training start date is required',
+      );
+    }
 
-      childFirstName: data.childFirstName || '',
-      childMiddleName: data.childMiddleName || '',
-      childLastName: data.childLastName || '',
-      childsGender: data.childsGender || '',
-      childDateOfBirth: dob,
+    const member =
+      await this.memberModel.create({
+        accountType:
+          data.accountType ||
+          'GUARDIAN',
 
-      session: data.session || 'UNKNOWN',
+        guardianFirstName:
+          data.guardianFirstName || '',
 
-      disciplines:
-        Array.isArray(data.disciplines) && data.disciplines.length
-          ? data.disciplines
-          : defaultDisciplines,
+        guardianMiddleName:
+          data.guardianMiddleName || '',
 
-      membershipStatus: data.membershipStatus || 'ACTIVE',
+        guardianLastName:
+          data.guardianLastName || '',
 
-      allergies: data.allergies || '',
-      medicalConditions: data.medicalConditions || '',
-      medications: data.medications || '',
-      safeguardingNotes: data.safeguardingNotes || '',
+        email:
+          data.email || '',
 
-      emergencyContactName: data.emergencyContactName || '',
-      emergencyContactPhone: data.emergencyContactPhone || '',
+        relationship:
+          data.relationship ||
+          'Guardian',
 
-      consentSafeguarding: data.consentSafeguarding ?? true,
-      consentData: data.consentData ?? true,
-      consentPhotography: data.consentPhotography ?? false,
+        phone:
+          data.phone || '',
 
-      totalPrice: Number(data.totalPrice ?? defaultPrice),
+        childFirstName:
+          data.childFirstName || '',
 
-      paymentIntentId:
-        data.paymentIntentId || 'MANUAL_ADMIN_CREATE',
+        childMiddleName:
+          data.childMiddleName || '',
 
-      importSource:
-        data.importSource || 'MANUAL_ADMIN_CREATE',
-    });
+        childLastName:
+          data.childLastName || '',
+
+        childsGender:
+          data.childsGender || '',
+
+        childDateOfBirth:
+          dob,
+
+        gymId:
+          programmeId,
+
+        session:
+          isGrappleHub
+            ? 'JUNIORS'
+            : data.session ||
+              'UNKNOWN',
+
+        disciplines:
+          isGrappleHub
+            ? ['BJJ']
+            : data.disciplines?.length
+              ? data.disciplines
+              : ['BOXING'],
+
+        membershipStatus:
+          'ACTIVE',
+
+        allergies:
+          data.allergies || '',
+
+        medicalConditions:
+          data.medicalConditions || '',
+
+        medications:
+          data.medications || '',
+
+        safeguardingNotes:
+          data.safeguardingNotes || '',
+
+        emergencyContactName:
+          data.emergencyContactName || '',
+
+        emergencyContactPhone:
+          data.emergencyContactPhone || '',
+
+        consentSafeguarding:
+          data.consentSafeguarding ??
+          true,
+
+        consentData:
+          data.consentData ??
+          true,
+
+        consentPhotography:
+          data.consentPhotography ??
+          false,
+
+        totalPrice:
+          Number(
+            data.totalPrice || 0,
+          ),
+
+        paymentIntentId:
+          data.paymentIntentId ||
+          'MANUAL_ADMIN_CREATE',
+
+        importSource:
+          data.importSource ||
+          'MANUAL_ADMIN_CREATE',
+
+        trainingStartDate:
+          isGrappleHub
+            ? trainingStartDate
+            : null,
+
+        bjjBelt:
+          isGrappleHub
+            ? data.bjjBelt ||
+              BjjYouthBelt.WHITE
+            : BjjYouthBelt.WHITE,
+
+        bjjStripes:
+          isGrappleHub
+            ? Number(
+                data.bjjStripes || 0,
+              )
+            : 0,
+
+        lastGradingDate:
+          null,
+
+        gradingNotes:
+          '',
+      });
 
     return member.toObject();
   }
 
   async update(
     id: string,
-    programmeId: ProgrammeId,
     data: any,
   ) {
-    const dob = data.childDateOfBirth
-      ? new Date(data.childDateOfBirth)
-      : undefined;
+    const existing =
+      await this.memberModel.findById(
+        id,
+      );
 
-    const defaultDisciplines =
-      programmeId === ProgrammeId.THE_GRAPPLE_HUB
-        ? ['BJJ']
-        : ['BOXING'];
+    if (!existing) {
+      throw new NotFoundException(
+        'Member not found',
+      );
+    }
 
-    const updateData: Record<string, unknown> = {
-      accountType: data.accountType || 'GUARDIAN',
+    const dob =
+      data.childDateOfBirth
+        ? new Date(
+            data.childDateOfBirth,
+          )
+        : undefined;
 
-      guardianFirstName: data.guardianFirstName || '',
-      guardianMiddleName: data.guardianMiddleName || '',
-      guardianLastName: data.guardianLastName || '',
-      email: String(data.email || '').trim().toLowerCase(),
-      relationship: data.relationship || 'Parent/Guardian',
+    const trainingStartDate =
+      data.trainingStartDate
+        ? new Date(
+            data.trainingStartDate,
+          )
+        : undefined;
 
-      childFirstName: data.childFirstName || '',
-      childMiddleName: data.childMiddleName || '',
-      childLastName: data.childLastName || '',
-      childsGender: data.childsGender || '',
+    const updateData: any = {
+      accountType:
+        data.accountType ??
+        existing.accountType,
 
-      session: data.session || 'UNKNOWN',
+      guardianFirstName:
+        data.guardianFirstName ??
+        existing.guardianFirstName,
+
+      guardianMiddleName:
+        data.guardianMiddleName ??
+        existing.guardianMiddleName,
+
+      guardianLastName:
+        data.guardianLastName ??
+        existing.guardianLastName,
+
+      email:
+        data.email ??
+        existing.email,
+
+      relationship:
+        data.relationship ??
+        existing.relationship,
+
+      phone:
+        data.phone ??
+        existing.phone,
+
+      childFirstName:
+        data.childFirstName ??
+        existing.childFirstName,
+
+      childMiddleName:
+        data.childMiddleName ??
+        existing.childMiddleName,
+
+      childLastName:
+        data.childLastName ??
+        existing.childLastName,
+
+      childsGender:
+        data.childsGender ??
+        existing.childsGender,
+
+      session:
+        data.session ??
+        existing.session,
 
       disciplines:
-        Array.isArray(data.disciplines) && data.disciplines.length
+        data.disciplines?.length
           ? data.disciplines
-          : defaultDisciplines,
+          : existing.disciplines,
 
-      allergies: data.allergies || '',
-      medicalConditions: data.medicalConditions || '',
-      medications: data.medications || '',
-      safeguardingNotes: data.safeguardingNotes || '',
+      allergies:
+        data.allergies ??
+        existing.allergies,
 
-      emergencyContactName: data.emergencyContactName || '',
-      emergencyContactPhone: data.emergencyContactPhone || '',
+      medicalConditions:
+        data.medicalConditions ??
+        existing.medicalConditions,
 
-      consentSafeguarding: data.consentSafeguarding ?? true,
-      consentData: data.consentData ?? true,
-      consentPhotography: data.consentPhotography ?? false,
+      medications:
+        data.medications ??
+        existing.medications,
 
-      totalPrice: Number(data.totalPrice ?? 0),
+      safeguardingNotes:
+        data.safeguardingNotes ??
+        existing.safeguardingNotes,
 
-      paymentIntentId:
-        data.paymentIntentId || 'MANUAL_ADMIN_UPDATE',
+      emergencyContactName:
+        data.emergencyContactName ??
+        existing.emergencyContactName,
+
+      emergencyContactPhone:
+        data.emergencyContactPhone ??
+        existing.emergencyContactPhone,
+
+      consentSafeguarding:
+        data.consentSafeguarding ??
+        existing.consentSafeguarding,
+
+      consentData:
+        data.consentData ??
+        existing.consentData,
+
+      consentPhotography:
+        data.consentPhotography ??
+        existing.consentPhotography,
+
+      totalPrice:
+        data.totalPrice !== undefined
+          ? Number(data.totalPrice)
+          : existing.totalPrice,
     };
 
     if (dob) {
-      updateData.childDateOfBirth = dob;
+      updateData.childDateOfBirth =
+        dob;
     }
 
-    const member = await this.memberModel
-      .findOneAndUpdate(
-        {
-          _id: id,
-          gymId: programmeId,
-        },
-        updateData,
-        {
-          new: true,
-          runValidators: true,
-        },
-      )
-      .lean();
+    if (
+      existing.gymId ===
+      'THE_GRAPPLE_HUB'
+    ) {
+      if (trainingStartDate) {
+        updateData.trainingStartDate =
+          trainingStartDate;
+      }
+
+      if (data.bjjBelt) {
+        updateData.bjjBelt =
+          data.bjjBelt;
+      }
+
+      if (
+        data.bjjStripes !==
+        undefined
+      ) {
+        const stripes =
+          Number(
+            data.bjjStripes,
+          );
+
+        if (
+          stripes < 0 ||
+          stripes > 4
+        ) {
+          throw new BadRequestException(
+            'BJJ stripes must be between 0 and 4',
+          );
+        }
+
+        updateData.bjjStripes =
+          stripes;
+      }
+
+      if (
+        data.lastGradingDate
+      ) {
+        updateData.lastGradingDate =
+          new Date(
+            data.lastGradingDate,
+          );
+      }
+
+      if (
+        data.gradingNotes !==
+        undefined
+      ) {
+        updateData.gradingNotes =
+          data.gradingNotes;
+      }
+    }
+
+    const member =
+      await this.memberModel
+        .findByIdAndUpdate(
+          id,
+          updateData,
+          {
+            new: true,
+            runValidators: true,
+          },
+        )
+        .lean();
 
     if (!member) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException(
+        'Member not found',
+      );
     }
 
     return member;
   }
 
-  async delete(id: string, programmeId: ProgrammeId) {
-    const member = await this.memberModel
-      .findOneAndDelete({
-        _id: id,
-        gymId: programmeId,
-      })
-      .lean();
+  async delete(id: string) {
+    const member =
+      await this.memberModel
+        .findByIdAndDelete(id)
+        .lean();
 
     if (!member) {
-      throw new NotFoundException('Member not found');
+      throw new NotFoundException(
+        'Member not found',
+      );
     }
 
-    return { success: true };
+    return {
+      success: true,
+    };
+  }
+
+  async getBjjProgress(
+    id: string,
+  ) {
+    const member =
+      await this.memberModel
+        .findById(id)
+        .lean();
+
+    if (!member) {
+      throw new NotFoundException(
+        'Member not found',
+      );
+    }
+
+    if (
+      member.gymId !==
+      'THE_GRAPPLE_HUB'
+    ) {
+      throw new BadRequestException(
+        'BJJ progression is only available for The Grapple Hub members',
+      );
+    }
+
+    const attendance =
+      await this.attendanceService
+        .getMemberAttendanceSummary(
+          id,
+          'THE_GRAPPLE_HUB',
+        );
+
+    return {
+      memberId:
+        String(member._id),
+
+      childName: [
+        member.childFirstName,
+        member.childMiddleName,
+        member.childLastName,
+      ]
+        .filter(Boolean)
+        .join(' '),
+
+      trainingStartDate:
+        member.trainingStartDate ??
+        null,
+
+      monthsTraining:
+        this.calculateMonthsTraining(
+          member.trainingStartDate,
+        ),
+
+      currentBelt:
+        member.bjjBelt ??
+        BjjYouthBelt.WHITE,
+
+      stripes:
+        member.bjjStripes ?? 0,
+
+      lastGradingDate:
+        member.lastGradingDate ??
+        null,
+
+      gradingNotes:
+        member.gradingNotes ?? '',
+
+      recordedClasses:
+        attendance.present,
+
+      recordedAbsences:
+        attendance.absent,
+
+      totalRecordedRegisters:
+        attendance.total,
+
+      attendanceRate:
+        attendance.rate,
+
+      firstRecordedClass:
+        attendance.firstRecordedClass,
+
+      latestRecordedClass:
+        attendance.latestRecordedClass,
+    };
+  }
+
+  private calculateMonthsTraining(
+    startDate?: Date | null,
+  ) {
+    if (!startDate) {
+      return 0;
+    }
+
+    const start =
+      new Date(startDate);
+
+    const today =
+      new Date();
+
+    let months =
+      (today.getFullYear() -
+        start.getFullYear()) *
+      12;
+
+    months +=
+      today.getMonth() -
+      start.getMonth();
+
+    if (
+      today.getDate() <
+      start.getDate()
+    ) {
+      months--;
+    }
+
+    return Math.max(
+      months,
+      0,
+    );
   }
 }
