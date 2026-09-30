@@ -121,9 +121,9 @@ export class MailService {
           padding:20px;
         ">
           <p style="margin:0 0 12px 0;">
-            <strong>Summer Term 2026</strong><br/>
-            Saturday 4th July 2026 -
-            Saturday 26th September 2026
+            <strong>Autumn Term 2026</strong><br/>
+            Saturday 3rd October 2026 -
+            Saturday 26th December 2026
           </p>
 
           <p style="margin:0 0 12px 0;">
