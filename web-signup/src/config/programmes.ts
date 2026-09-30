@@ -91,9 +91,9 @@ export const PROGRAMMES:
         ),
 
     terms: [
-      'Brawlers Boxing - Summer Term 2026. Saturday 4th July 2026 to Saturday 26th September 2026.',
+      'Brawlers Boxing - Autumn Term 2026. Saturday 3rd October 2026 to Saturday 26th December 2026.',
 
-      'Summer term fee: £100 per child for the 3-month programme.',
+      'Autumn term fee: £100 per child for the 3-month programme.',
 
       'Each child must complete an individual registration form to secure their place. Parents/guardians are responsible for ensuring regular attendance. Refunds are not offered for absences, except genuine health or medical reasons with appropriate evidence.',
 
