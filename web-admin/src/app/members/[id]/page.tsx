@@ -338,10 +338,10 @@ export default function MemberDetailPage() {
     user?.roles.includes('SUPER_ADMIN');
 
   const defaultStart =
-    programmeId === 'BRAWLERS_BOXING' ? '2026-07-04' : '';
+    programmeId === 'BRAWLERS_BOXING' ? '2026-10-03' : '';
 
   const defaultEnd =
-    programmeId === 'BRAWLERS_BOXING' ? '2026-09-26' : '';
+    programmeId === 'BRAWLERS_BOXING' ? '2026-12-26' : '';
 
   const defaultAmount =
     programmeId === 'BRAWLERS_BOXING' ? 100 : undefined;

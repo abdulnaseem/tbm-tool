@@ -940,7 +940,7 @@ export class PaymentsService {
           'BRAWLERS_CURRENT_TERM_NAME',
         ) ??
         this.config.get<string>('CURRENT_TERM_NAME') ??
-        'Summer Term 2026';
+        'Autumn Term 2026';
 
     const termStart = isGrappleHub
       ? this.config.get<string>(
@@ -952,7 +952,7 @@ export class PaymentsService {
           'BRAWLERS_CURRENT_TERM_START',
         ) ??
         this.config.get<string>('CURRENT_TERM_START') ??
-        '2026-07-04';
+        '2026-10-03';
 
     const termEnd = isGrappleHub
       ? this.config.get<string>(
@@ -964,7 +964,7 @@ export class PaymentsService {
           'BRAWLERS_CURRENT_TERM_END',
         ) ??
         this.config.get<string>('CURRENT_TERM_END') ??
-        '2026-09-26';
+        '2026-12-26';
 
     const from = this.startOfUtcDay(new Date(termStart));
     const to = this.endOfUtcDay(new Date(termEnd));
