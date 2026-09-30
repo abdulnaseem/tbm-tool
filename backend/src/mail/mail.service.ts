@@ -514,9 +514,7 @@ export class MailService {
               <strong>
                 Payment covers:
               </strong>
-              ${periodStart}
-              to
-              ${periodEnd}
+                Saturday 3rd October 2026 to Saturday 26th December 2026
             </div>
 
             <p>
@@ -524,11 +522,11 @@ export class MailService {
               ${programme.name}
               programme period from
               <strong>
-                ${periodStart}
+                Saturday 3rd October 2026 
               </strong>
               to
               <strong>
-                ${periodEnd}
+                Saturday 26th December 2026.
               </strong>.
             </p>
 
