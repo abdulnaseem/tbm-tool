@@ -113,7 +113,7 @@ export class MailService {
         <h3 style="margin-top:30px;">
           Programme Information
         </h3>
-
+      
         <div style="
           background:#f8fafc;
           border:1px solid #e2e8f0;
@@ -122,33 +122,71 @@ export class MailService {
         ">
           <p style="margin:0 0 12px 0;">
             <strong>Autumn Term 2026</strong><br/>
-            Saturday 3rd October 2026 -
+            Saturday 10th October 2026 -
             Saturday 26th December 2026
           </p>
-
+      
           <p style="margin:0 0 12px 0;">
             <strong>Training Day</strong><br/>
             Every Saturday
           </p>
-
+      
           <p style="margin:0 0 12px 0;">
-            <strong>Cubs (5-10 years)</strong><br/>
-            12:45pm - 1:45pm
+            <strong>Turtles (Ages 4-7)</strong><br/>
+            12:15pm - 1:00pm
           </p>
-
+      
           <p style="margin:0 0 12px 0;">
-            <strong>Tigers (11-17 years)</strong><br/>
-            1:45pm - 2:45pm
+            <strong>Cubs (Ages 8-12)</strong><br/>
+            1:00pm - 1:55pm
           </p>
-
+      
+          <p style="margin:0 0 12px 0;">
+            <strong>Tigers - Boys Only (Ages 12-17)</strong><br/>
+            2:00pm - 3:00pm
+          </p>
+      
+          <p style="margin:0 0 12px 0;">
+            <strong>Girls Only (Ages 11-16)</strong><br/>
+            3:00pm - 4:00pm
+          </p>
+      
+          <hr style="
+            border:0;
+            border-top:1px solid #e2e8f0;
+            margin:16px 0;
+          "/>
+      
+          <p style="margin:0 0 12px 0;">
+            <strong>Membership Fee</strong><br/>
+            £100 per child for the full 3-month term
+            (12-13 sessions).
+          </p>
+      
+          <p style="margin:0 0 12px 0;">
+            <strong>Join Anytime</strong><br/>
+            New members can join at any point during
+            the term. Membership fees are adjusted
+            based on the number of sessions remaining.
+          </p>
+      
+          <p style="margin:0 0 12px 0;">
+            <strong>Free Trial Session</strong><br/>
+            New members are entitled to one free trial
+            session. If they decide to enrol, the trial
+            session is included in their paid membership.
+            If they do not continue, no payment is required.
+          </p>
+      
           <p style="margin:0;">
-            <strong>Location</strong><br/>
+            <strong>Training Location</strong><br/>
             Osmani Trust<br/>
             58 Underwood Road<br/>
             London E1 5AW
           </p>
         </div>
       `,
+      
     };
   }
 
