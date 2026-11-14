@@ -95,6 +95,8 @@ export const PROGRAMMES:
           'Brawlers Boxing - Autumn Term 2026. Saturday 10th October 2026 to Saturday 26th December 2026 (12 sessions).',
         
           'Autumn term fee: £100 per child for the 3-month programme.',
+
+          'Free Trial: All new members are entitled to one free trial session. If the child decides not to continue, no payment is required. If the child enrols, the trial session is included in their paid membership and the fee is calculated from the date of their first session.',
         
           'Each child must complete an individual registration form to secure their place. Parents/guardians are responsible for ensuring regular attendance. Refunds are not offered for absences.',
         

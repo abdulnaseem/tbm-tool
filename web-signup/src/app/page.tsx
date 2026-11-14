@@ -108,6 +108,25 @@ export default function HomePage() {
             </div>
           </div>
 
+
+          {/* Flexible Registration */}
+          <div className="mx-auto mt-3 max-w-md rounded-2xl border border-green-100 bg-green-50/50 p-4 text-center">
+            <div className="font-semibold text-slate-900">
+              Join Anytime During the Term
+            </div>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              New members are welcome throughout the term.
+              Membership fees are adjusted based on the
+              number of sessions remaining.
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-green-700">
+              First session is a free trial!
+            </p>
+          </div>
+
+
           {/* Current Term */}
           <div className="mx-auto mt-4 max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
             <div className="font-semibold text-slate-900">
