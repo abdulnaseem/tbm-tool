@@ -105,6 +105,8 @@ export const PROGRAMMES:
           'Cubs (Ages 8-12): 1:00pm-1:55pm.',
         
           'Tigers (Boys Only, Ages 12-17): 2:00pm-3:00pm.',
+          
+          'Girls Only (Ages 11-16): 3:00pm-4:00pm.',
         
           'Training venue: Osmani Trust, 58 Underwood Road, London E1 5AW.',
         ],
