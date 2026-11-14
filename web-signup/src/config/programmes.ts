@@ -90,17 +90,25 @@ export const PROGRAMMES:
           dateOfBirth,
         ),
 
-    terms: [
-      'Brawlers Boxing - Autumn Term 2026. Saturday 3rd October 2026 to Saturday 26th December 2026.',
 
-      'Autumn term fee: £100 per child for the 3-month programme.',
-
-      'Each child must complete an individual registration form to secure their place. Parents/guardians are responsible for ensuring regular attendance. Refunds are not offered for absences, except genuine health or medical reasons with appropriate evidence.',
-
-      'Cubs: 12:45pm-1:45pm. Tigers: 1:45pm-2:45pm.',
-
-      'Osmani Trust, 58 Underwood Rd, London E1 5AW.',
-    ],
+        terms: [
+          'Brawlers Boxing - Autumn Term 2026. Saturday 10th October 2026 to Saturday 26th December 2026 (12 sessions).',
+        
+          'Autumn term fee: £100 per child for the 3-month programme.',
+        
+          'Each child must complete an individual registration form to secure their place. Parents/guardians are responsible for ensuring regular attendance. Refunds are not offered for absences.',
+        
+          'Saturday Training Timetable:',
+        
+          'Turtles (Ages 4-7): 12:15pm-1:00pm.',
+        
+          'Cubs (Ages 8-12): 1:00pm-1:55pm.',
+        
+          'Tigers (Boys Only, Ages 12-17): 2:00pm-3:00pm.',
+        
+          'Training venue: Osmani Trust, 58 Underwood Road, London E1 5AW.',
+        ],
+        
 
     success: {
       thankYou:

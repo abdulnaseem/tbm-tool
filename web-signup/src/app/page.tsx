@@ -1,5 +1,24 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
+
+const sessions = [
+  {
+    name: 'Turtles',
+    ages: '4-7 years old',
+    time: '12:15 PM - 1:00 PM',
+  },
+  {
+    name: 'Cubs',
+    ages: '8-12 years old',
+    time: '1:00 PM - 1:55 PM',
+  },
+  {
+    name: 'Tigers (Boys Only)',
+    ages: '12-17 years old',
+    time: '2:00 PM - 3:00 PM',
+  },
+];
 
 export default function HomePage() {
   return (
@@ -32,34 +51,96 @@ export default function HomePage() {
             The Butterfly Movement presents
           </p>
 
-          <h1 className="mt-2 text-[28px] sm:text-4xl md:text-5xl font-bold leading-tight text-slate-900">
-            <span className="block whitespace-nowrap">Brawlers Boxing</span>
+          <h1 className="mt-2 text-[28px] font-bold leading-tight text-slate-900 sm:text-4xl md:text-5xl">
+            <span className="block">Brawlers Boxing</span>
             <span className="block">Sign Up</span>
           </h1>
 
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-6 text-slate-600 md:text-base">
-            Join the Brawlers Boxing programme. Membership runs on a rolling 3-month term basis, 
-            with payment due at the start of each term. Brawlers Boxing is part of The Butterfly Movement family.
+            Join the Brawlers Boxing programme. Our boxing
+            sessions take place every Saturday, with classes
+            for children and teenagers aged 4-17.
+            Membership runs on a rolling 3-month term basis,
+            with payment due at the start of each term.
           </p>
 
-          <div className="mt-6 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="font-semibold text-slate-900">Cubs</div>
-              <div>5-10 years old</div>
+          {/* Saturday Timetable */}
+          <h2 className="mt-8 text-lg font-bold text-slate-900">
+            Saturday Training Sessions
+          </h2>
+
+          <div className="mt-4 grid gap-3 text-sm text-slate-700 md:grid-cols-3">
+            {sessions.map((session) => (
+              <div
+                key={session.name}
+                className="rounded-2xl border border-slate-100 bg-slate-50 p-5"
+              >
+                <div className="font-bold text-slate-900">
+                  {session.name}
+                </div>
+
+                <div className="mt-1 text-slate-600">
+                  Ages {session.ages.replace(' years old', '')}
+                </div>
+
+                <div className="mt-3 font-semibold text-green-700">
+                  {session.time}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Membership Fee */}
+          <div className="mx-auto mt-4 max-w-md rounded-2xl border border-green-100 bg-green-50 p-4">
+            <div className="font-semibold text-slate-900">
+              Membership Fee
             </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="font-semibold text-slate-900">Tigers</div>
-              <div>11-17 years old</div>
-            </div>
-            <div className="rounded-2xl bg-slate-50 p-4">
-              <div className="font-semibold text-slate-900">Membership Fee</div>
-              <div>£100 every 3 months</div>
+            <div className="mt-1 text-xl font-bold text-green-700">
+              £100 every 3 months
             </div>
           </div>
 
+          {/* Current Term */}
+          <div className="mx-auto mt-4 max-w-md rounded-2xl border border-slate-200 bg-slate-50 p-5 text-center">
+            <div className="font-semibold text-slate-900">
+              Current Term - Autumn 2026
+            </div>
+
+            <div className="mt-2 font-medium text-slate-700">
+              10 October - 26 December 2026
+            </div>
+
+          </div>
+
+
+          {/* Training Location */}
+          <div className="mx-auto mt-6 max-w-md text-center">
+            <div className="font-semibold text-slate-900">
+              Training Location
+            </div>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              Osmani Trust
+              <br />
+              58 Underwood Road
+              <br />
+              London E1 5AW
+            </p>
+
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=Osmani+Trust+58+Underwood+Road+London+E1+5AW"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-2 inline-block text-sm font-semibold text-green-700 hover:underline"
+            >
+              View on Google Maps
+            </a>
+          </div>
+
+
           <Link
             href="/signup"
-            className="mt-8 inline-flex rounded-xl bg-green-700 px-8 py-3 font-semibold text-white hover:bg-green-800"
+            className="mt-8 inline-flex rounded-xl bg-green-700 px-8 py-3 font-semibold text-white transition-colors hover:bg-green-800"
           >
             Start registration
           </Link>
