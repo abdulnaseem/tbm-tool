@@ -137,7 +137,7 @@ export class MailService {
           </p>
       
           <p style="margin:0 0 12px 0;">
-            <strong>Cubs (Ages 8-12)</strong><br/>
+            <strong>Cubs (Ages 8-11)</strong><br/>
             1:00pm - 1:55pm
           </p>
       
