@@ -104,7 +104,7 @@ export const PROGRAMMES:
         
           'Turtles (Ages 4-7): 12:15pm-1:00pm.',
         
-          'Cubs (Ages 8-12): 1:00pm-1:55pm.',
+          'Cubs (Ages 8-11): 1:00pm-1:55pm.',
         
           'Tigers (Boys Only, Ages 12-17): 2:00pm-3:00pm.',
           

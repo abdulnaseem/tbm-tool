@@ -10,7 +10,7 @@ const sessions = [
   },
   {
     name: 'Cubs',
-    ages: '8-12',
+    ages: '8-11',
     time: '1:00 PM - 1:55 PM',
   },
   {
