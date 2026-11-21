@@ -12,10 +12,26 @@ import {
   MemberProfile,
   MemberProfileDocument,
   ProgrammeId,
+  Session,
 } from './schemas/member-profile.schema';
 
 import { PaymentsService } from '../payments/payments.service';
 import { AttendanceService } from '../attendance/attendance.service';
+
+const BOXING_SESSIONS: Session[] = [
+  'TURTLES', 'CUBS', 'TIGERS', 'GIRLS_ONLY', 'UNKNOWN',
+];
+const ALL_SESSIONS: Session[] = [
+  ...BOXING_SESSIONS, 'JUNIORS', 'ADULTS',
+];
+
+function validateSession(session: unknown, programmeId: ProgrammeId) {
+  const allowed = programmeId === 'BRAWLERS_BOXING'
+    ? BOXING_SESSIONS : ['JUNIORS', 'ADULTS', 'UNKNOWN'];
+  if (typeof session !== 'string' || !allowed.includes(session as Session)) {
+    throw new BadRequestException('Invalid session for programme');
+  }
+}
 
 @Injectable()
 export class MembersService {
@@ -33,12 +49,14 @@ export class MembersService {
 
   async findAll(
     programmeId?: ProgrammeId,
+    session?: Session,
   ) {
-    const filter = programmeId
-      ? {
-          gymId: programmeId,
-        }
-      : {};
+    if (session && !ALL_SESSIONS.includes(session)) {
+      throw new BadRequestException('Invalid session');
+    }
+    const filter: Record<string, unknown> = {};
+    if (programmeId) filter.gymId = programmeId;
+    if (session) filter.session = session;
 
     const members = await this.memberModel
       .find(filter)
@@ -128,6 +146,9 @@ export class MembersService {
       );
     }
 
+    const session = isGrappleHub ? 'JUNIORS' : (data.session ?? 'UNKNOWN');
+    validateSession(session, programmeId);
+
     const member =
       await this.memberModel.create({
         accountType:
@@ -171,11 +192,7 @@ export class MembersService {
         gymId:
           programmeId,
 
-        session:
-          isGrappleHub
-            ? 'JUNIORS'
-            : data.session ||
-              'UNKNOWN',
+        session,
 
         disciplines:
           isGrappleHub
@@ -286,6 +303,16 @@ export class MembersService {
             data.trainingStartDate,
           )
         : undefined;
+
+    if (data.session !== undefined) {
+      validateSession(data.session, existing.gymId);
+    }
+    if (dob && Number.isNaN(dob.getTime())) {
+      throw new BadRequestException('Invalid date of birth');
+    }
+    if (trainingStartDate && Number.isNaN(trainingStartDate.getTime())) {
+      throw new BadRequestException('Invalid BJJ training start date');
+    }
 
     const updateData: any = {
       accountType:

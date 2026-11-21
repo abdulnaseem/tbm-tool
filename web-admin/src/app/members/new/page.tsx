@@ -9,6 +9,7 @@ import { Shell } from '../../../components/layout/Shell';
 import { apiFetch, ApiError } from '../../../lib/apiClient';
 import { useProgramme } from '../../../context/ProgrammeContext';
 import { withProgramme } from '../../../lib/programmeApi';
+import { BRAWLERS_SESSIONS, GRAPPLE_SESSIONS } from '../../../lib/memberSessions';
 
 function FieldLabel({
   children,
@@ -63,17 +64,7 @@ export default function AddMemberPage() {
 
   const isBrawlers = programmeId === 'BRAWLERS_BOXING';
 
-  const sessionOptions = isBrawlers
-    ? [
-        { value: 'CUBS', label: 'Cubs' },
-        { value: 'TIGERS', label: 'Tigers' },
-        { value: 'UNKNOWN', label: 'Unknown' },
-      ]
-    : [
-        { value: 'JUNIORS', label: 'Juniors' },
-        { value: 'ADULTS', label: 'Adults' },
-        { value: 'UNKNOWN', label: 'Unknown' },
-      ];
+  const sessionOptions = isBrawlers ? BRAWLERS_SESSIONS : GRAPPLE_SESSIONS;
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();

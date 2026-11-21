@@ -11,6 +11,7 @@ import { saveAs } from 'file-saver';
 import { useAuth } from '../../context/AuthContext';
 import { useProgramme } from '../../context/ProgrammeContext';
 import { withProgramme } from '../../lib/programmeApi';
+import { BRAWLERS_SESSIONS, GRAPPLE_SESSIONS, sessionLabel } from '../../lib/memberSessions';
 
 type Member = {
   _id: string;
@@ -76,7 +77,11 @@ function SessionBadge({ session }: { session?: string }) {
   const value = session || 'UNKNOWN';
 
   const badgeClass =
-    value === 'CUBS'
+    value === 'TURTLES'
+      ? 'bg-green-50 text-green-700'
+      : value === 'GIRLS_ONLY'
+      ? 'bg-pink-50 text-pink-700'
+      : value === 'CUBS'
       ? 'bg-orange-50 text-orange-700'
       : value === 'TIGERS'
       ? 'bg-blue-50 text-blue-700'
@@ -90,7 +95,7 @@ function SessionBadge({ session }: { session?: string }) {
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${badgeClass}`}
     >
-      {value}
+      {sessionLabel(value)}
     </span>
   );
 }
@@ -125,23 +130,12 @@ export default function MembersPage() {
   }, [programmeId]);
 
   const sessionOptions = useMemo(() => {
-    const values = Array.from(
-      new Set(members.map((member) => member.session || 'UNKNOWN')),
-    );
-
-    const preferredOrder = ['CUBS', 'TIGERS', 'JUNIORS', 'ADULTS', 'UNKNOWN'];
-
-    return values.sort((a, b) => {
-      const aIndex = preferredOrder.indexOf(a);
-      const bIndex = preferredOrder.indexOf(b);
-
-      if (aIndex === -1 && bIndex === -1) return a.localeCompare(b);
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-
-      return aIndex - bIndex;
-    });
-  }, [members]);
+    const configured = programmeId === 'BRAWLERS_BOXING'
+      ? BRAWLERS_SESSIONS.map((option) => option.value)
+      : GRAPPLE_SESSIONS.map((option) => option.value);
+    const historical = members.map((member) => member.session || 'UNKNOWN');
+    return [...new Set([...configured, ...historical])];
+  }, [members, programmeId]);
 
   const filteredMembers = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
@@ -193,7 +187,7 @@ export default function MembersPage() {
   const handleExportPaymentSheet = () => {
     const rows = filteredMembers.map((member) => ({
       'Child Name': getChildFullName(member),
-      Session: member.session || '',
+      Session: sessionLabel(member.session),
       'Membership Status': member.membershipStatus || '',
       Disciplines: member.disciplines?.join(', ') || '',
       'Date of Birth': formatDate(member.childDateOfBirth),
@@ -292,7 +286,7 @@ export default function MembersPage() {
                         : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
                     }`}
                   >
-                    {tab === 'ALL' ? 'All' : tab} ({getSessionCount(tab)})
+                    {tab === 'ALL' ? 'All' : sessionLabel(tab)} ({getSessionCount(tab)})
                   </button>
                 ))}
               </div>

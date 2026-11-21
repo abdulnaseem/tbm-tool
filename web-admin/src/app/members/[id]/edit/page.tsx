@@ -9,6 +9,7 @@ import { Shell } from '../../../../components/layout/Shell';
 import { apiFetch, ApiError } from '../../../../lib/apiClient';
 import { useProgramme } from '../../../../context/ProgrammeContext';
 import { withProgramme } from '../../../../lib/programmeApi';
+import { BRAWLERS_SESSIONS, GRAPPLE_SESSIONS } from '../../../../lib/memberSessions';
 
 type MemberDetail = {
   _id: string;
@@ -121,19 +122,14 @@ export default function EditMemberPage() {
   const isBrawlers = programmeId === 'BRAWLERS_BOXING';
   const isGrappleHub = programmeId === 'THE_GRAPPLE_HUB';
 
-  const sessionOptions = isBrawlers
-    ? [
-        { value: 'CUBS', label: 'Cubs' },
-        { value: 'TIGERS', label: 'Tigers' },
-        { value: 'UNKNOWN', label: 'Unknown' },
-      ]
-    : [
-        { value: 'JUNIORS', label: 'Juniors' },
-        { value: 'ADULTS', label: 'Adults' },
-        { value: 'UNKNOWN', label: 'Unknown' },
-      ];
+  const sessionOptions = isBrawlers ? BRAWLERS_SESSIONS : GRAPPLE_SESSIONS;
 
   const [member, setMember] = useState<MemberDetail | null>(null);
+  // Preserve historical values not included in the current programme options.
+  const availableSessionOptions = member?.session &&
+    !sessionOptions.some((option) => option.value === member.session)
+    ? [...sessionOptions, { value: member.session, label: `${member.session} (historical)` }]
+    : sessionOptions;
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -375,7 +371,7 @@ export default function EditMemberPage() {
                     defaultValue={member.session || 'UNKNOWN'}
                     className={inputClassName}
                   >
-                    {sessionOptions.map((option) => (
+                    {availableSessionOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>

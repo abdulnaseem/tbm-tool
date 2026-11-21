@@ -10,6 +10,7 @@ import { apiFetch } from '../../../lib/apiClient';
 import { useAuth } from '../../../context/AuthContext';
 import { useProgramme } from '../../../context/ProgrammeContext';
 import { withProgramme } from '../../../lib/programmeApi';
+import { sessionLabel } from '../../../lib/memberSessions';
 
 
 type MemberDetail = {
@@ -607,7 +608,7 @@ export default function MemberDetailPage() {
                       ))}
 
                       <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
-                        {session}
+                        {sessionLabel(session)}
                       </span>
 
                       {isGrappleHub && (
@@ -886,7 +887,7 @@ export default function MemberDetailPage() {
                   label="Date of birth"
                   value={formatDate(member.childDateOfBirth)}
                 />
-                <DetailRow label="Session" value={session} />
+                <DetailRow label="Session" value={sessionLabel(session)} />
                 <DetailRow
                   label="Disciplines"
                   value={disciplines.length > 0 ? disciplines.join(', ') : '-'}
